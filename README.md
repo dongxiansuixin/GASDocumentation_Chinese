@@ -167,6 +167,7 @@
 	- [9.3 动画蒙太奇不能同步到客户端](#93-动画蒙太奇不能同步到客户端)
 	- [9.4 复制的蓝图Actor会将AttributeSet设置为nullptr](#94-复制的蓝图actor会将attributeset设置为nullptr)
 	- [9.5 未解析的外部符号UEPushModelPrivate::MarkPropertyDirty(int,int)](#95-未解析的外部符号UEPushModelPrivateMarkPropertyDirtyintint)
+	- [9.6 枚举名现在由路径名表示](#96-枚举名现在由路径名表示)
 - [10. ASC常用术语缩略](#10-asc常用术语缩略)
 - [11. 其他资源](#11-其他资源)
 
@@ -3358,6 +3359,28 @@ ActiveGameplayEffects.MarkItemDirty(*AGE);
 
 发生的原因是`WITH_PUSH_MODEL`在多个地方定义。`PushModelMacros.h`将它定义为0，但很多地方将它定义为1。`PushModel.h`将它视为1但`PushModel.cpp`将它视为0。  
 解决方法是将`NetCore`加到你项目的`PublicDependencyModuleNames`中。
+
+**[⬆ 返回目录](#table-of-contents)**
+
+<a name="troubleshooting-enumnamesarenowpathnames"></a>
+### 9.6 枚举名称现在由路径名表示
+如果你看到如下编译警告：
+```
+warning C4996: 'FGameplayAbilityInputBinds::FGameplayAbilityInputBinds': Enum names are now represented by path names. Please use a version of FGameplayAbilityInputBinds constructor that accepts FTopLevelAssetPath. Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
+```
+UE 5.1已放弃在`FGameplayAbilityInputBinds`构造函数中使用`FString`表示枚举名。我们需要传入一个`FTopLevelAssetPath`作为替代。
+旧方法：
+```c++
+AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"),
+	FString("CancelTarget"), FString("EGDAbilityInputID"), static_cast<int32>(EGDAbilityInputID::Confirm), static_cast<int32>(EGDAbilityInputID::Cancel)));
+```
+新方法：
+```c++
+FTopLevelAssetPath AbilityEnumAssetPath = FTopLevelAssetPath(FName("/Script/GASDocumentation"), FName("EGDAbilityInputID"));
+AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"),
+	FString("CancelTarget"), AbilityEnumAssetPath, static_cast<int32>(EGDAbilityInputID::Confirm), static_cast<int32>(EGDAbilityInputID::Cancel)));
+```
+更多信息请查阅`Engine\Source\Runtime\CoreUObject\Public\UObject\TopLevelAssetPath.h`。
 
 **[⬆ 返回目录](#table-of-contents)**
 
