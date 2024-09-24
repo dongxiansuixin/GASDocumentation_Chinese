@@ -2619,7 +2619,7 @@ virtual bool ShouldAsyncLoadRuntimeObjectLibraries() const override
 * 模拟代理可以可靠接收`WhileActive`和`OnRemove`  
 `WhileActive`和`OnRemove`由`UAbilitySystemComponent::MinimalReplicationGameplayCues`调用。`OnActive`由不可靠的多播委托调用。
 
-如果您需要让`GameplayCue`中的内容可靠，则请从`Gameplay Effect`中应用它，并使用`WhileActive`添加FX、使用`OnRemove`删除FX。
+如果您需要让`GameplayCue`中的内容可靠，则请从`Gameplay Effect`中应用它，并在`WhileActive`添加FX、在`OnRemove`删除FX。
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -3199,8 +3199,7 @@ Fortnite大逃杀(Fortnite Battle Royale)世界中有很多可损坏的`AActor`(
 <a name="troubleshooting-duplicatingblueprintactors"></a>
 ## 9.4 复制的蓝图Actor会将AttributeSet设置为nullptr
 
-这是一个[虚幻引擎的bug](https://issues.unrealengine.com/issue/UE-81109), 当使用从一个存在的蓝图Actor类复制的方式来创建新的类, 这会让这个类中将AttributeSet指针设置为空指针.  
-
+这是一个[虚幻引擎的bug](https://issues.unrealengine.com/issue/UE-81109), 当使用从一个存在的蓝图Actor类复制的方式来创建新的类, 这会让这个Actor类中的AttributeSet指针被置为空指针。  
 对此有一些变通的方法, 我已经成功地不在我的类内创建定制的`AttributeSet`指针(头文件中没有指针, 也不在构造函数中调用`CreateDefaultSubobject`), 
 而是直接在PostInitializeComponents()中向`ASC`添加`AttributeSets`(样本项目中没有显示).  
 复制的AttributeSets将仍然存在于`ASC`的`SpawnedAttributes`数组中. 它看起来像这样:  
@@ -3255,7 +3254,7 @@ if (AbilitySystemComponent)
 
 顺便提一下, 往`ASC`组件注册的每个`AttributeSet`类最多只有一个对象.  
 
-**[⬆ Back to Top](#table-of-contents)**
+**[⬆ 返回目录](#table-of-contents)**
 
 <a name="acronyms"></a>
 # 10. ASC常用术语缩略
