@@ -2591,16 +2591,16 @@ virtual bool ShouldAsyncLoadRuntimeObjectLibraries() const override
 <a name="concepts-gc-events"></a>
 #### 4.8.8 GameplayCue事件
 
-`GameplayCue`响应特定的`EGameplayCueEvents`:
+`GameplayCue`响应特定的`EGameplayCueEvent`:
 
 | `EGameplayCueEvent` | 描述 |
 | ------------------- | ------------- |
 | `OnActive`          | `GameplayCue`被激活（添加）时调用。|
-| `WhileActive`       | `GameplayCue`活跃时调用，即便它实际上并未被应用（正在加入中等情况）。这不是`Tick`！它跟`OnActive`一样，在`GameplayCueNotify_Actor`被添加或具有相关性时调用。如果你需要`Tick()`，请使用 `GameplayCueNotify_Actor`的`Tick()`，毕竟它是`AActor`。|
+| `WhileActive`       | `GameplayCue`活跃时调用，即便它实际上并未被应用（正在加入中的情况等等）。这不是`Tick`！它跟`OnActive`一样，在`GameplayCueNotify_Actor`被添加或具有相关性时调用。如果你需要`Tick()`，请使用 `GameplayCueNotify_Actor`的`Tick()`，毕竟它是`AActor`。|
 | `Removed`           | `GameplayCue`被移除时调用。`GameplayCue`蓝图里响应该事件的函数是`OnRemove`。|
-| `Executed`          | `GameplayCue`被执行时调用。instant effects or periodic `Tick()`. `GameplayCue`蓝图里响应该事件的函数是`OnExecute`。 |
+| `Executed`          | `GameplayCue`以即时效果或周期性`Tick()`被执行时调用。`GameplayCue`蓝图里响应该事件的函数是`OnExecute`。 |
 
-Use `OnActive` for anything in your `GameplayCue` that happen at the start of the `GameplayCue` but is okay if late joiners miss. Use `WhileActive` for ongoing effects in the `GameplayCue` that you would want late joiners to see. For example, if you have a `GameplayCue` for a tower structure in a MOBA exploding, you would put the initial explosion particle system and explosion sound in `OnActive` and you would put any residual ongoing fire particles or sounds in the `WhileActive`. In this scenario, it wouldn't make sense for late joiners to replay the initial explosion from `OnActive`, but you would want them to see the persistent, looping fire effects on the ground after the explosion happened from `WhileActive`. `OnRemove` should clean up anything added in `OnActive` and `WhileActive`. `WhileActive` will be called every time an Actor enters the relevancy range of a `GameplayCueNotify_Actor`. `OnRemove` will be called every time an Actor leaves relevancy range of a `GameplayCueNotify_Actor`.
+对于发生在你的`GameplayCue`开始时、后加入者错过也没关系的的任何事情，请使用`OnActive`。对于`GameplayCue`中你希望后加入者也能看见的持续效果，请使用`WhileActive`。例如，如果你有一个在MOBA爆炸中的塔结构的`GameplayCue`，你要将爆炸起始的粒子系统和声响放入`OnActive`，将任何残留的持续性火焰粒子或声音放入`WhileActive`。在这种情况下，后加入者从`OnActive`重播爆炸起始是没有意义的, 但可以看到发生在`WhileActive`的爆炸之后、在地面上持续循环的火焰效果。`OnRemove`要将所有在`OnActive`和`WhileActive`中添加的东西移除掉。每次有Actor进入`GameplayCueNotify_Actor`的相关范围时，都会调用`WhileActive`。每次有Actor离开 `GameplayCueNotify_Actor`的相关范围时，都会调用`OnRemove`。
 
 **[⬆ 返回目录](#table-of-contents)**
 
