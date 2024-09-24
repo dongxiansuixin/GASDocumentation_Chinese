@@ -1,6 +1,6 @@
-**更新时间：2024/09/24(进行中：第一节)**  
+**更新时间：2024/09/24，对齐至英文原版commit：cfa68e019217d058a5af2a14322fa5ee4705bbd1**  
 本文是接续[BillEliot/GASDocumentation_Chinese](https://github.com/BillEliot/GASDocumentation_Chinese)进行的翻译版本。  
-原翻译版本截至2021年3月，本文预计将花费3个月时间追上英文原版[tranek/GASDocumentation](https://github.com/BillEliot/GASDocumentation)的进度。  
+原翻译版本截至2021年3月，本文将长期更新，尽力追上英文原版[tranek/GASDocumentation](https://github.com/BillEliot/GASDocumentation)的进度。  
 感谢tranek对社区的杰出贡献以及BillEliot在翻译上的辛勤工作！  
 注意事项：
 1. 由于新的译者水平十分有限，翻译水平不如机翻也是有可能的，介意者请立即关闭该网页；
@@ -481,7 +481,7 @@ virtual void StunTagChanged(const FGameplayTag CallbackTag, int32 NewCount);
 <a name="concepts-gt-loadfromplugin"></a>
 ### 4.2.2 从插件.ini文件加载Gameplay Tags
 
-如果你创建了拥有自己的、带有`GameplayTags`ini文件的插件，你可以在插件`StartupModule()`函数中加载插件的`GameplayTag`ini目录。
+如果你创建了含有带`GameplayTag`的专有ini文件的插件，你可以在插件的`StartupModule()`函数中加载插件的`GameplayTag`ini文件所在目录。
 例如，下面是UE自带的插件CommonConversation的做法：
 ```c++
 void FCommonConversationRuntimeModule::StartupModule()
@@ -493,7 +493,7 @@ void FCommonConversationRuntimeModule::StartupModule()
 	//...
 }
 ```
-它会查找`Plugins\CommonConversation\Config\Tags`并在项目启动时加载所有含有`GameplayTag`的ini文件到项目中，前提是插件已经启用。
+它会查找`Plugins\CommonConversation\Config\Tags`目录，如果该插件已启用，那么它会在项目启动时加载所有含有`GameplayTag`的ini文件到项目中。
 
 **[⬆ 返回目录](#table-of-contents)**
 
