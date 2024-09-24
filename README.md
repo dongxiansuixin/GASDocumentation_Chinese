@@ -169,11 +169,6 @@
 	- [9.4 复制的蓝图Actor会将AttributeSet设置为nullptr](#94-复制的蓝图actor会将attributeset设置为nullptr)
 - [10. ASC常用术语缩略](#10-asc常用术语缩略)
 - [11. 其他资源](#11-其他资源)
-- [12. GAS更新日志](#12-gas更新日志)
-	- [4.26](#426)
-	- [4.25.1](#4251)
-	- [4.25](#425)
-	- [4.24](#424)
 
 ---
 
@@ -625,7 +620,7 @@ AbilitySystemComponent->ForceReplication();
 
 在物品类实例中存储普通浮点数而不是`Attribute`, Fortnite和[GASShooter](https://github.com/tranek/GASShooter)就是这样处理枪械子弹的, 对于枪械, 在其实例中存储可同步的浮点数(COND_OwnerOnly), 比如最大弹匣量, 当前弹匣中弹药量, 剩余弹药量等等, 如果枪械需要共享剩余弹药量, 那么就将剩余弹药量移到Character中共享的弹药`AttributeSet`里作为一个`Attribute`(换弹Ability可以使用一个`Cost GE`从剩余弹药量中填充枪械的弹匣弹药量浮点). 因为没有为当前弹匣弹药量使用`Attribute`, 所以需要重写`UGameplayAbility`中的一些函数来检查和应用枪械中浮点数的花销(cost). 当授予Ability时将枪械在[GameplayAbilitySpec](https://github.com/tranek/GASDocumentation#concepts-ga-spec)中转换为`SourceObject`, 这意味着可以在Ability中访问授予Ability的枪械.  
 
-为了防止在全自动射击过程中枪械会反向同步弹药量并扰乱本地弹药量(译者注: 通俗解释就是因为存在同步延迟且在连续射击这一高同步过程中, 所以客户端的弹药量会来不及和服务端同步, 造成弹药量减少后又突然变多的现象.), 如果玩家拥有`IsFiring`的`GameplayTag`, 就在PreReplication()中禁用同步, 本质上是要在其中做自己的本地预测.  
+为了防止在全自动射击过程中枪械会反向同步弹药量并扰乱本地弹药量(译者注: 通俗解释就是因为存在同步延迟且在连续射击这一高同步过程中, 客户端的弹药量未来得及和服务端同步, 造成弹药量减少后又突然变多的现象), 如果玩家拥有`IsFiring`的`GameplayTag`, 就在PreReplication()中禁用同步, 本质上是要在其中做自己的本地预测.  
 
 ```c++
 void AGSWeapon::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
@@ -1522,7 +1517,7 @@ void UPGGameplayAbility::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, 
 
 ![Cooldown GE with SetByCaller](https://raw.githubusercontent.com/BillEliot/GASDocumentation_Chinese/main/Images/cooldownsbc.png)  
 
-2. 使用[MMC](#concepts-ge-mmc). 它的设置与上文所提的一致, 除了不需要在`Cooldown GE`和`ApplyCost`中设置`SetByCaller`作为持续时间, 相反, 我们需要将持续时间设置为`Custom Calculation类`并将其指向新创建的`MMC`.  
+2. 使用[MMC](#concepts-ge-mmc). 它的设置与上文所提的一致, 除了不需要在`Cooldown GE`和`ApplyCooldown`中设置`SetByCaller`作为持续时间, 相反, 我们需要将持续时间设置为`Custom Calculation`类并将其指向新创建的`MMC`.  
 
 ```c++
 UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Cooldown")
@@ -2605,25 +2600,26 @@ virtual bool ShouldAsyncLoadRuntimeObjectLibraries() const override
 **[⬆ 返回目录](#table-of-contents)**
 
 <a name="concepts-gc-reliability"></a>
-#### 4.8.9 Gameplay Cue Reliability
+#### 4.8.9 GameplayCue可靠性
 
-`GameplayCues` in general should be consindered unreliable and thus unsuited for anything that directly affects gameplay.
+`GameplayCue`一般来讲被认为是不可靠的，因此不适合直接影响游戏玩法。
 
-**Executed GameplayCues:** These GameplayCues are applied via unreliable multicasts and are always unreliable.
+**已执行的`GameplayCue`**：这些`GameplayCue`是由不可靠的多播委托应用的，并且始终不可靠。
 
-**GameplayCues applied from GameplayEffects:**
-* Autonomous proxy reliably receives `OnActive`, `WhileActive`, and `OnRemove`  
-`FActiveGameplayEffectsContainer::NetDeltaSerialize()` calls `UAbilitySystemComponent::HandleDeferredGameplayCues()` to call `OnActive` and `WhileActive`. `FActiveGameplayEffectsContainer::RemoveActiveGameplayEffectGrantedTagsAndModifiers()` makes the call to `OnRemoved`.
-* Simulated proxies reliably receive `WhileActive` and `OnRemove`  
-`UAbilitySystemComponent::MinimalReplicationGameplayCues`'s replication calls `WhileActive` and `OnRemove`. The `OnActive` event is called by an unreliable multicast.
+**由`GameplayEffect`应用的`GameplayCue`**：  
+* 自治代理（Autonomous Proxy）可以可靠接收`OnActive`、`WhileActive`和`OnRemove`    
+`FActiveGameplayEffectsContainer::NetDeltaSerialize()`调用`UAbilitySystemComponent::HandleDeferredGameplayCues()`，以调用`OnActive` and `WhileActive`。
+`FActiveGameplayEffectsContainer::RemoveActiveGameplayEffectGrantedTagsAndModifiers()`会调用`OnRemoved`。
+* 模拟代理（Simulated Proxy）可以可靠接收`WhileActive`和`OnRemove`  
+`WhileActive`和`OnRemove`由`UAbilitySystemComponent::MinimalReplicationGameplayCues`调用。`OnActive`由不可靠的多播委托调用。
 
-**GameplayCues applied without a GameplayEffect:**
-* Autonomous proxy reliably recieves `OnRemove`  
-The `OnActive` and `WhileActive` events are called by an unreliable multicast.
-* Simulated proxies reliably recieve `WhileActive` and `OnRemove`  
-`UAbilitySystemComponent::MinimalReplicationGameplayCues`'s replication calls `WhileActive` and `OnRemove`. The `OnActive` event is called by an unreliable multicast.
+**并非由`GameplayEffect`应用的`GameplayCue`**：  
+* 自治代理可以可靠接收`OnRemove`   
+事件`OnActive`和`WhileActive`由不可靠的多播委托调用。  
+* 模拟代理可以可靠接收`WhileActive`和`OnRemove`  
+`WhileActive`和`OnRemove`由`UAbilitySystemComponent::MinimalReplicationGameplayCues`调用。`OnActive`由不可靠的多播委托调用。
 
-If you need something in a `GameplayCue` to be 'reliable', then apply it from a `GameplayEffect` and use `WhileActive` to add the FX and `OnRemove` to remove the FX.
+如果您需要让`GameplayCue`中的内容可靠，则请从`Gameplay Effect`中应用它，并使用`WhileActive`添加FX、使用`OnRemove`删除FX。
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -3276,7 +3272,7 @@ if (AbilitySystemComponent)
 |GameplayEffect|GE|
 |GameplayEffectExecutionCalculation|ExecCalc, Execution|
 |GameplayTag|Tag, GT|
-|ModiferMagnitudeCalculation|ModMagCalc, MMC|
+|ModifierMagnitudeCalculation|ModMagCalc, MMC|
 
 **[⬆ 返回目录](#table-of-contents)**
 
