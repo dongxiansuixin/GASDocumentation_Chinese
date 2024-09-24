@@ -3,18 +3,17 @@
 原翻译版本截至2021年3月，本文预计将花费3个月时间追上英文原版[tranek/GASDocumentation](https://github.com/BillEliot/GASDocumentation)的进度。  
 感谢tranek对社区的杰出贡献以及BillEliot在翻译上的辛勤工作！  
 注意事项：
-1. 由于新的翻译者水平十分有限，翻译水平不如机翻也是有可能的，介意者请立即关闭该网页；
+1. 由于新的译者水平十分有限，翻译水平不如机翻也是有可能的，介意者请立即关闭该网页；
 2. 针对翻译出现的谬误，欢迎提issue，但不接受PR。若有无关issue会立即关闭；
 3. 本文将去掉“GAS Changelog”一节，需要的话请自行前往英文原版进行查询。
 
 # GASDocumentation
 
-我使用一个简单的多人游戏模板项目来阐述对Unreal Engine 4中GameplayAbilitySystem(GAS)插件的理解. 这不是官方文档并且这个项目和我自己都不来自Epic Games. 我不能保证该文档的准确性.  
+我使用一个简单的多人游戏模板项目来阐述对Unreal Engine中GameplayAbilitySystem(GAS)插件的理解. 这不是官方文档并且这个项目和我自己都不来自Epic Games. 我不能保证该文档的准确性.  
 
 该文档的目的是阐明GAS中的主要概念和相关类, 并结合我的经验提供一些附加说明. 在社区用户中, 已经形成了大量有关GAS的"部落知识", 而我致力于将我了解的全部在这里分享.  
 
-样例项目和文档目前基于`Unreal Engine 4.26`. 该文档拥有可用于旧版本Unreal Engine的分支, 但是它们不再受支持, 并且可能存在bug和过时信息.  
-[GASShooter](https://github.com/tranek/GASShooter)是该样例项目的姐妹项目, 其演示了基于多人FPS/TPS的高阶GAS技术.  
+样例项目和文档目前基于`Unreal Engine 5.3`. [GASShooter](https://github.com/tranek/GASShooter)是该样例项目的姐妹项目, 其演示了基于多人FPS/TPS的高阶GAS技术.  
 
 最好的文档永远是该插件的代码.  
 
@@ -167,6 +166,7 @@
 	- [9.2 `ScriptStructCache`错误](#92-scriptstructcache错误)
 	- [9.3 动画蒙太奇不能同步到客户端](#93-动画蒙太奇不能同步到客户端)
 	- [9.4 复制的蓝图Actor会将AttributeSet设置为nullptr](#94-复制的蓝图actor会将attributeset设置为nullptr)
+	- [9.5 未解析的外部符号UEPushModelPrivate::MarkPropertyDirty(int,int)](#95-未解析的外部符号UEPushModelPrivateMarkPropertyDirtyintint)
 - [10. ASC常用术语缩略](#10-asc常用术语缩略)
 - [11. 其他资源](#11-其他资源)
 
@@ -211,7 +211,7 @@ GAS中的现存问题:
 <a name="sp"></a>
 ## 2. 样例项目
 
-该文档包含一个支持多人联机的第三人称射击游戏模板项目, 其目标受众为初识`GameplayAbilitySystem`插件, 但并不是Unreal Engine 4新手. 用户应该了解C++, 蓝图, UMG, Replication和其他UE4的中间件. 该项目提供了一个样例, 其向你展示了如何使用`GameplayAbilitySystem`插件建立一个基础的支持多人联机的第三人称射击游戏, 其中`AbilitySystemComponent(ASC)`分别位于`PlayerState`类代表玩家/AI控制的人物和位于`Character`类代表AI控制的小兵.  
+该文档包含一个支持多人联机的第三人称射击游戏模板项目, 其目标受众为初识`GameplayAbilitySystem`插件, 但并不是Unreal Engine新手. 用户应该了解C++, 蓝图, UMG, Replication和其他UE中间件. 该项目提供了一个样例, 其向你展示了如何使用`GameplayAbilitySystem`插件建立一个基础的支持多人联机的第三人称射击游戏, 其中`AbilitySystemComponent(ASC)`分别位于`PlayerState`类代表玩家/AI控制的人物和位于`Character`类代表AI控制的小兵.  
 我在保证展现GAS基础和带有完整注释的代码所表示的一些普遍技能的同时, 尽力使这个样例足够简单. 由于该文档专注于初学者, 因此该样例不包含像[Predicting Projectiles](#concepts-p-spawn)这样的高阶技术.  
 概念说明:  
 * `ASC`位于`PlayerState`还是`Character`.
@@ -268,7 +268,7 @@ AI控制的小兵没有预先定义的`GameplayAbility`. 红方小兵有较多�
 1. 在编辑器中启用GameplayAbilitySystem插件.
 2. 编辑`YourProjectName.Build.cs`, 添加`"GameplayAbilities"`, `"GameplayTags"`, `"GameplayTasks"`到你的`PrivateDependencyModuleNames`.
 3. 刷新/重新生成Visual Studio项目文件.
-4. 从4.24开始, 需要强制调用`UAbilitySystemGlobals::InitGlobalData()`来使用[`TargetData`](#concepts-targeting-data), 样例项目在`UEngineSubsystem::Initialize()`中调用该函数. 参阅[`InitGlobalData()`](#concepts-asg-initglobaldata)获取更多信息.
+4. 从4.24开始, 需要强制调用`UAbilitySystemGlobals::Get().InitGlobalData()`来使用[`TargetData`](#concepts-targeting-data), 样例项目在`UAssetManager::StartInitialLoading()`中调用该函数. 参阅[`InitGlobalData()`](#concepts-asg-initglobaldata)获取更多信息.
 
 这就是你启用GAS所需做的全部了. 从这里开始, 添加一个[`ASC`](#concepts-asc)和[`AttributeSet`](#concepts-as)到你的`Character`或`PlayerState`, 并开始着手[`GameplayAbility`](#concepts-ga)和[`GameplayEffect`](#concepts-ge)!
 
@@ -428,7 +428,7 @@ void AGDHeroCharacter::OnRep_PlayerState()
 
 保存于`FGameplayTagCountContainer`中的`GameplayTag`有保存该`GameplayTag`实例数的`TagMap`. FGameplayTagCountContainer可能存有`TagMapCount`为0的`GameplayTag`, 你可能在Debug时遇到这种情况. 任何`HasTag()`或`HasMatchingTag()`或其他相似的函数会检查`TagMapCount`, 如果`GameplayTag`不存在或者其`TagMapCount`为0就会返回false.  
 
-`GameplayTag`必须在`DefaultGameplayTag.ini`中提前定义, UE4编辑器在项目设置中提供了一个界面供开发者管理`GameplayTag`而无需手动编辑DefaultGameplayTag.ini, 该`GameplayTag`编辑器可以创建, 重命名, 搜索引用和删除`GameplayTag`.  
+`GameplayTag`必须在`DefaultGameplayTag.ini`中提前定义, UE编辑器在项目设置中提供了一个界面供开发者管理`GameplayTag`而无需手动编辑DefaultGameplayTag.ini, 该`GameplayTag`编辑器可以创建, 重命名, 搜索引用和删除`GameplayTag`.  
 
 ![GameplayTag Editor in Project Settings](https://raw.githubusercontent.com/BillEliot/GASDocumentation_Chinese/main/Images/gameplaytageditor.png)  
 
@@ -591,14 +591,14 @@ virtual void HealthChanged(const FOnAttributeChangeData& Data);
 武器添加到Inventory:  
 
 ```c++
-AbilitySystemComponent->SpawnedAttribute.AddUnique(WeaponAttributeSetPointer);
+AbilitySystemComponent->GetSpawnedAttributes_Mutable().AddUnique(WeaponAttributeSetPointer);
 AbilitySystemComponent->ForceReplication();
 ```
 
 武器从Inventory移除:  
 
 ```c++
-AbilitySystemComponent->SpawnedAttribute.Remove(WeaponAttributeSetPointer);
+AbilitySystemComponent->GetSpawnedAttributes_Mutable().Remove(WeaponAttributeSetPointer);
 AbilitySystemComponent->ForceReplication();
 ```
 
@@ -766,9 +766,7 @@ void UGDAttributeSetBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 AttributeSet->InitHealth(100.0f);
 ```
 
-查看`AttributeSet.h`获取更多初始化`Attribute`的方法.  
-
-**Note**: 4.24之前, FAttributeSetInitterDiscreteLevels不能和FGameplayAttributeData协同使用, 它在`Attribute`是原生浮点数时创建, 并且会和FGameplayAttributeData不是Plain Old Data(POD)时冲突. 该问题在4.24中修复([https://issues.unrealengine.com/issue/UE-76557.](https://issues.unrealengine.com/issue/UE-76557)).  
+查看`AttributeSet.h`获取更多初始化`Attribute`的方法. 
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -1026,7 +1024,7 @@ Multipliers: 1.1, 0.5
 Multipliers: 5, 5
 `1 + (5 - 1) + (5 - 1) = 9`, 错误预期`10`. 它总会是`Modifier值的和 - Modifier个数 + 1`.  
 
-很多游戏会想要它们的`Modify`和`Divide`Modifier在应用到BaseValue之前先乘或除到一起, 为了实现这种需求, 你需要修改`FAggregatorModChannel::EvaluateWithBase()`的引擎代码.  
+很多游戏会想要它们的`Multiply`和`Divide`的Modifier在应用到BaseValue之前先乘或除到一起, 为了实现这种需求, 你需要修改`FAggregatorModChannel::EvaluateWithBase()`的引擎代码.  
 
 ```c++
 float FAggregatorModChannel::EvaluateWithBase(float InlineBaseValue, const FAggregatorEvaluateParameters& Parameters) const
@@ -1477,7 +1475,7 @@ FGameplayTagContainer CooldownTags;
 
 // Temp container that we will return the pointer to in GetCooldownTags().
 // This will be a union of our CooldownTags and the Cooldown GE's cooldown tags.
-UPROPERTY()
+UPROPERTY(Transient)
 FGameplayTagContainer TempCooldownTags;
 ```
 
@@ -1487,6 +1485,7 @@ FGameplayTagContainer TempCooldownTags;
 const FGameplayTagContainer * UPGGameplayAbility::GetCooldownTags() const
 {
 	FGameplayTagContainer* MutableTags = const_cast<FGameplayTagContainer*>(&TempCooldownTags);
+	MutableTags->Reset(); // MutableTags会写入CDO中的TempCooldownTags所以清掉以防技能冷却标签发生变化（移到另外一个槽内）
 	const FGameplayTagContainer* ParentTags = Super::GetCooldownTags();
 	if (ParentTags)
 	{
@@ -1528,7 +1527,7 @@ FGameplayTagContainer CooldownTags;
 
 // Temp container that we will return the pointer to in GetCooldownTags().
 // This will be a union of our CooldownTags and the Cooldown GE's cooldown tags.
-UPROPERTY()
+UPROPERTY(Transient)
 FGameplayTagContainer TempCooldownTags;
 ```
 
@@ -1538,6 +1537,7 @@ FGameplayTagContainer TempCooldownTags;
 const FGameplayTagContainer * UPGGameplayAbility::GetCooldownTags() const
 {
 	FGameplayTagContainer* MutableTags = const_cast<FGameplayTagContainer*>(&TempCooldownTags);
+	MutableTags->Reset(); // MutableTags会写入CDO中的TempCooldownTags所以清掉以防技能冷却标签发生变化（移到另外一个槽内）
 	const FGameplayTagContainer* ParentTags = Super::GetCooldownTags();
 	if (ParentTags)
 	{
@@ -1631,7 +1631,7 @@ bool APGPlayerState::GetCooldownRemainingForTag(FGameplayTagContainer CooldownTa
 
 **Note:** 在客户端上监听某个`GameplayEffect`添加或移除要求其可以接收同步的`GameplayEffect`, 这依赖于它们`ASC`的[同步模式](#concepts-asc-rm).  
 
-样例项目包含一个用于监听冷却开始和结束的自定义蓝图节点, HUD UMG Widget使用它来更新陨石技能的剩余冷却时间, 该`AsyncTask`会一直响应直到手动调用`EndTask()`, 就像在UMG Widget的`Destruct`事件中调用那样. 参阅`AsyncTaskAttributeChanged.h/cpp`.  
+样例项目包含一个用于监听冷却开始和结束的自定义蓝图节点, HUD UMG Widget使用它来更新陨石技能的剩余冷却时间, 该`AsyncTask`会一直响应直到手动调用`EndTask()`, 就像在UMG Widget的`Destruct`事件中调用那样. 参阅样例项目中的`AsyncTaskAttributeChanged.h/cpp`.（本文不包含样例项目，请查阅英文原版仓库）  
 
 ![Listen for Cooldown Change BP Node](https://raw.githubusercontent.com/BillEliot/GASDocumentation_Chinese/main/Images/cooldownchange.png)  
 
@@ -1774,7 +1774,7 @@ void UGameplayAbilityRuntimeGE::ActivateAbility(const FGameplayAbilitySpecHandle
 <a name="concepts-ge-containers"></a>
 #### 4.5.18 GameplayEffect Containers
 
-Epic的[Action RPG](https://www.unrealengine.com/marketplace/en-US/slug/action-rpg)样例项目实现了一个名为`FGameplayEffectContainer`的结构体, 它不属于原生GAS, 但是对于包含`GameplayEffect`和[TargetData](#concepts-targeting-data)极其好用, 它会使一些过程自动化, 比如从`GameplayEffect`中创建`GameplayEffectSpec`并在其`GameplayEffectContext`中设置默认值. 在`GameplayAbility`中创建`GameplayEffectContainer`并将其传递给已生成的投掷物是非常简单和显而易见的, 然而我没有选择在样例项目中实现`GameplayEffectContainer`, 因为我想向你展示的是没有它的原生GAS, 但是我高度建议你研究一下它并将其纳入到你的项目中.  
+Epic的[Action RPG](https://www.unrealengine.com/marketplace/en-US/product/action-rpg)样例项目实现了一个名为`FGameplayEffectContainer`的结构体, 它不属于原生GAS, 但是对于包含`GameplayEffect`和[TargetData](#concepts-targeting-data)极其好用, 它会使一些过程自动化, 比如从`GameplayEffect`中创建`GameplayEffectSpec`并在其`GameplayEffectContext`中设置默认值. 在`GameplayAbility`中创建`GameplayEffectContainer`并将其传递给已生成的投掷物是非常简单和显而易见的, 然而我没有选择在样例项目中实现`GameplayEffectContainer`, 因为我想向你展示的是没有它的原生GAS, 但是我高度建议你研究一下它并将其纳入到你的项目中.  
 
 为了访问`GameplayEffectContainer`中的`GESpec`以求做一些诸如添加`SetByCaller`的操作, 请使用`FGameplayEffectContainer`结构体中的`GESpec`数组索引访问`GESpec`引用, 这要求你需要提前知道想要访问的`GESpec`的索引.  
 
@@ -2278,7 +2278,7 @@ bool UGSAbilitySystemComponent::BatchRPCTryActivateAbility(FGameplayAbilitySpecH
 
 GASShooter对半自动和全自动枪支使用了相同的批处理`GameplayAbility`, 并没有直接调用`EndAbility()`(它通过一个只能由客户端调用的Ability在该Ability外处理, 该只能由客户端调用的Ability用于管理玩家输入和基于当前开火模式对批处理Ability的调用). 因为所有的RPC必须在`FScopedServerAbilityRPCBatcher`域中, 所以我提供了`EndAbilityImmediately`参数以使仅客户端的控制/管理可以明确该Ability是否可以批处理`EndAbility()`(半自动)或不批处理`EndAbility()`(全自动)以及之后`EndAbility()`是否可以在其自己的RPC中调用.  
 
-GASShooter暴露了一个蓝图节点以允许上文提到的仅客户端调用的Ability所使用的批处理Ability来触发批处理Ability. (译者注: 此处相当拗口, 但原文翻译确实如此, 配合项目浏览也许会更容易明白些.)  
+GASShooter暴露了一个蓝图节点以允许上文提到的仅本地调用的Ability所使用的批处理Ability，让它们可以触发批处理Ability. 
 
 ![Activate Batched Ability](https://raw.githubusercontent.com/BillEliot/GASDocumentation_Chinese/main/Images/batchabilityactivate.png)  
 
@@ -2369,8 +2369,6 @@ Task->ReadyForActivation();
 #### 4.7.4 Root Motion Source Ability Task
 
 GAS自带的`AbilityTask`可以使用挂载在`CharacterMovementComponent`中的`Root Motion Source`随时间推移而移动`Character`, 像击退, 复杂跳跃, 吸引和猛冲.  
-
-**Note:** `RootMotionSource AbilityTask`预测支持的引擎版本是4.19和4.25+, 该预测在引擎版本4.20-4.24中存在bug, 然而, `AbilityTask`仍然可以使用较小的网络修正在多人游戏中执行功能, 并且在单人游戏中完美运行. 可以将4.25中对预测的修复自定义到4.20~4.24引擎中.  
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -2640,9 +2638,9 @@ AbilitySystemGlobalsClassName="/Script/ParagonAssets.PAAbilitySystemGlobals"
 <a name="concepts-asg-initglobaldata"></a>
 #### 4.9.1 InitGlobalData()
 
-从UE 4.24开始, 必须调用`UAbilitySystemGlobals::InitGlobalData()`来使用[TargetData](#concepts-targeting-data), 否则你会遇到关于`ScriptStructCache`的错误, 并且客户端会从服务端断开连接, 该函数只需要在项目中调用一次. Fortnite从AssetManager类的起始加载函数中调用该函数, Paragon是从UEngine::Init()中调用的. 我发现将其放到`UEngineSubsystem::Initialize()`是个好位置, 这也是样例项目中使用的. 我觉得你应该复制这段模板代码到你自己的项目中以避免出现`TargetData`的使用问题.  
+从UE 4.24开始, 必须调用`UAbilitySystemGlobals::Get().InitGlobalData()`来使用[`TargetData`](#concepts-targeting-data), 否则你会遇到关于`ScriptStructCache`的错误, 并且客户端会从服务端断开连接, 该函数只需要在项目中调用一次. Fortnite从`UAssetManager::StartInitialLoading()`调用该函数, 而Paragon是从`UEngine::Init()`中调用的. 我发现将其放到`UAssetManager::StartInitialLoading()`是个好位置, 这也是样例项目中使用的. 我觉得你应该复制这段模板代码到你自己的项目中以避免出现`TargetData`的使用问题.  
 
-如果你在使用`AbilitySystemGlobals GlobalAttributeSetDefaultsTableNames`时发生崩溃, 可能之后需要像Fortnite一样在`AssetManager`或`GameInstance`中调用`UAbilitySystemGlobals::InitGlobalData()`而不是在`UEngineSubsystem::Initialize()`中. 该崩溃可能是由于`Subsystem`的加载顺序引发的, `GlobalAttributeDefaultsTables`需要加载`EditorSubsystem`来绑定`UAbilitySystemGlobals::InitGlobalData()`中的委托.  
+如果你在使用`AbilitySystemGlobals GlobalAttributeSetDefaultsTableNames`时发生崩溃, 你需要像Fortnite一样在`AssetManager`或`GameInstance`中调用`UAssetManager::StartInitialLoading()`.  
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -2668,7 +2666,7 @@ Epic的理念是只能预测"不受伤害(get away with)"的事情. 例如, Para
 	+ GameplayTag修改
 * GameplayCue事件(可预测GameplayEffect中的和它们自己)
 * 蒙太奇
-* 移动(内建在UE4 UCharacterMovement中)
+* 移动(内建在UCharacterMovement中)
 
 **什么是不可预测的:**  
 
@@ -2891,7 +2889,7 @@ void SetReticleMaterialParamVector(FName ParamName, FVector value);
 <a name="concepts-targeting-containers"></a>
 #### 4.11.5 Gameplay Effect Containers Targeting
 
-[GameplayEffectContainer](#concepts-ge-containers)提供了一个可选的产生[TargetData](#concepts-targeting-data)的高效方法. 当`EffectContainer`在客户端和服务端上应用时, 该定位会立即进行, 它比[TargetActor](#concepts-targeting-actors)更有效率, 因为它是运行在定位对象的CDO(Class Default Object)上的(没有Actor的生成和销毁), 但是它不支持用户输入, 无需确认即可立即进行, 不能取消, 并且不能从客户端向服务端发送数据(在两者上产生数据), 它对即时射线检测和碰撞Overlap很有用. Epic的[Action RPG Sample Project](https://www.unrealengine.com/marketplace/en-US/slug/action-rpg)包含两种使用Container定位的样例 —— 定位Ability拥有者和从事件拉取`TargetData`, 它还在蓝图中实现了在距玩家某个偏移处(由蓝图子类设置)做球形射线检测(Sphere Trace), 你可以在C++或蓝图中继承`URPGTargetType`以实现自己的定位类型.  
+[GameplayEffectContainer](#concepts-ge-containers)提供了一个可选的产生[TargetData](#concepts-targeting-data)的高效方法. 当`EffectContainer`在客户端和服务端上应用时, 该定位会立即进行, 它比[TargetActor](#concepts-targeting-actors)更有效率, 因为它是运行在定位对象的CDO(Class Default Object)上的(没有Actor的生成和销毁), 但是它不支持用户输入, 无需确认即可立即进行, 不能取消, 并且不能从客户端向服务端发送数据(在两者上产生数据), 它对即时射线检测和碰撞Overlap很有用. Epic的[Action RPG Sample Project](https://www.unrealengine.com/marketplace/en-US/product/action-rpg)包含两种使用Container定位的样例 —— 定位Ability拥有者和从事件拉取`TargetData`, 它还在蓝图中实现了在距玩家某个偏移处(由蓝图子类设置)做球形射线检测(Sphere Trace), 你可以在C++或蓝图中继承`URPGTargetType`以实现自己的定位类型.  
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -3015,7 +3013,7 @@ GASShooter实现了一个按钮交互系统, 玩家可以按下或按住'E'键�
 
 GAS有两种技术可以在运行时解决这些问题 —— [showdebug abilitysystem](#debugging-sd)和在[GameplayDebugger](#debugging-gd)中Hook.  
 
-**Tip:** UE4倾向于优化C++代码, 这使得某些函数变得很难调试, 当深入追踪代码时很少遇到这种情况. 如果将Visual Studio的解决方案配置设置为`DebugGame Editor`仍然不能追踪代码或者监视变量, 可以使用`PRAGMA_DISABLE_OPTIMIZATION_ACTUAL`和`PRAGMA_ENABLE_OPTIMIZATION_ACTUAL`宏包裹优化函数来关闭优化, 这不能在插件代码中使用除非从源码重新编译插件. 这可以或不可以用于inline函数, 取决于它的作用和位置. 确保完成调试后移除这两个宏!  
+**Tip:** UE倾向于优化C++代码, 这使得某些函数变得很难调试, 当深入追踪代码时很少遇到这种情况. 如果将Visual Studio的解决方案配置设置为`DebugGame Editor`仍然不能追踪代码或者监视变量, 可以使用`PRAGMA_DISABLE_OPTIMIZATION_ACTUAL`和`PRAGMA_ENABLE_OPTIMIZATION_ACTUAL`宏包裹优化函数来关闭优化, 这不能在插件代码中使用除非从源码重新编译插件. 这可以或不可以用于inline函数, 取决于它的作用和位置. 确保完成调试后移除这两个宏!  
 
 ```c++
 PRAGMA_DISABLE_OPTIMIZATION_ACTUAL
@@ -3097,7 +3095,7 @@ log list
 |LogGameplayTasks|Log|
 |VLogAbilitySystem|Display|
 
-详情查看[日志Wiki](https://www.ue4community.wiki/Legacy/Logs,_Printing_Messages_To_Yourself_During_Runtime).  
+详情查看[日志Wiki](https://unrealcommunity.wiki/logging-lgpidy6i).  
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -3256,6 +3254,23 @@ if (AbilitySystemComponent)
 
 **[⬆ 返回目录](#table-of-contents)**
 
+<a name="troubleshooting-unresolvedexternalsymbolmarkpropertydirty"></a>
+### 9.5 未解析的外部符号UEPushModelPrivate::MarkPropertyDirty(int,int)
+
+如果你有如下编译错误：  
+```
+error LNK2019: unresolved external symbol "__declspec(dllimport) void __cdecl UEPushModelPrivate::MarkPropertyDirty(int,int)" (__imp_?MarkPropertyDirty@UEPushModelPrivate@@YAXHH@Z) referenced in function "public: void __cdecl FFastArraySerializer::IncrementArrayReplicationKey(void)" (?IncrementArrayReplicationKey@FFastArraySerializer@@QEAAXXZ)
+```
+这是在试图在`FFastArraySerializer`中调用`MarkItemDirty()`时发生的。我在更新`ActiveGameplayEffect`（例如更新冷却时间）时遇到了这个问题。
+```c++
+ActiveGameplayEffects.MarkItemDirty(*AGE);
+```
+
+发生的原因是`WITH_PUSH_MODEL`在多个地方定义。`PushModelMacros.h`将它定义为0，但很多地方将它定义为1。`PushModel.h`将它视为1但`PushModel.cpp`将它视为0。  
+解决方法是将`NetCore`加到你项目的`PublicDependencyModuleNames`。
+
+**[⬆ 返回目录](#table-of-contents)**
+
 <a name="acronyms"></a>
 # 10. ASC常用术语缩略
 
@@ -3282,7 +3297,7 @@ if (AbilitySystemComponent)
 
 源代码! 特别是`GameplayPrediction.h`.  
 
-[Epic的Action RPG样例项目](https://www.unrealengine.com/marketplace/en-US/slug/action-rpg)  
+[Epic的Action RPG样例项目](https://www.unrealengine.com/marketplace/en-US/product/action-rpg)  
 
 [来自Epic的Dave Ratti回复社区关于GAS的问题](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89)  
 
