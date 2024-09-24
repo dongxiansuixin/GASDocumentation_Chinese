@@ -8,7 +8,7 @@
 2. 针对翻译出现的谬误，欢迎提issue，但不接受PR。若有无关issue会立即关闭；
 3. 本文将去掉“GAS Changelog”一节，需要的话请自行前往英文原版进行查询。
 
-英文原版地址: [tranek/GASDocumentation](https://github.com/BillEliot/GASDocumentation) 
+英文原版地址：[tranek/GASDocumentation](https://github.com/BillEliot/GASDocumentation) 
 
 # GASDocumentation
 
@@ -3258,87 +3258,5 @@ if (AbilitySystemComponent)
 [Dan 'Pan'的Github库](https://github.com/Pantong51/GASContent)  
 
 [SabreDartStudios的YouTube视频](https://www.youtube.com/channel/UCCFUhQ6xQyjXDZ_d6X_H_-A)
-
-**[⬆ 返回目录](#table-of-contents)**
-
-<a name="changelog"></a>
-# 12. GAS更新日志
-
-这是从Unreal Engine官方升级日志和我遇到的且未记录的升级中整理的一份值得一看的升级列表, 如果你发现某些没有列在其中, 请提issue或者PR.  
-
-**[⬆ 返回目录](#table-of-contents)**
-
-<a name="changelog-4.26"></a>
-## 4.26
-
-* GAS plugin is no longer flagged as beta.
-* Crash Fix: Fixed a crash when adding a gameplay tag without a valid tag source selection.
-* Crash Fix: Added the path string arg to a message to fix a crash in UGameplayCueManager::VerifyNotifyAssetIsInValidPath.
-* Crash Fix: Fixed an access violation crash in AbilitySystemComponent_Abilities when using a ptr without checking it.
-* Bug Fix: Fixed a bug where stacking GEs that did not reset the duration on additional instances of the effect being applied.
-* Bug Fix: Fixed an issue that caused CancelAllAbilities to only cancel non-instanced abilities.
-* New: Added optional tag parameters to gameplay ability commit functions.
-* New: Added StartTimeSeconds to PlayMontageAndWait ability task and improved comments.
-* New: Added tag container "DynamicAbilityTags" to FGameplayAbilitySpec. These are optional ability tags that are replicated with the spec. They are also captured as source tags by applied gameplay effects.
-* New: GameplayAbility IsLocallyControlled and HasAuthority functions are now callable from Blueprint.
-* New: Visual logger will now only collect and store info about instant GEs if we're currently recording visual logging data.
-* New: Added support for redirectors on gameplay attribute pins in blueprint nodes.
-* New: Added new functionality for when root motion movement related ability tasks end they will return the movement component's movement mode to the movement mode it was in before the task started.
-
-**[⬆ 返回目录](#table-of-contents)**
-
-<a name="changelog-4.25.1"></a>
-## 4.25.1
-
-* Fixed! UE-92787 Crash saving blueprint with a Get Float Attribute node and the attribute pin is set inline
-* Fixed! UE-92810 Crash spawning actor with instance editable gameplay tag property that was changed inline
-
-**[⬆ 返回目录](#table-of-contents)**
-
-<a name="changelog-4.25"></a>
-## 4.25
-
-* Fixed prediction of RootMotionSource AbilityTasks
-* [GAMEPLAYATTRIBUTE_REPNOTIFY()](#concepts-as-attributes) now additionally takes in the old Attribute value. We must supply that as the optional parameter to our OnRep functions. Previously, it was reading the attribute value to try to get the old value. However, if called from a replication function, the old value had already been discarded before reaching SetBaseAttributeValueFromReplication so we'd get the new value instead.
-* Added [NetSecurityPolicy](#concepts-ga-netsecuritypolicy) to UGameplayAbility.
-* Crash Fix: Fixed a crash when adding a gameplay tag without a valid tag source selection.
-* Crash Fix: Removed a few ways for attackers to crash a server through the ability system.
-* Crash Fix: We now make sure we have a GamplayEffect definition before checking tag requirements.
-* Bug Fix: Fixed an issue with gameplay tag categories not applying to function parameters in Blueprints if they were part of a function terminator node.
-* Bug Fix: Fixed an issue with gameplay effects' tags not being replicated with multiple viewports.
-* Bug Fix: Fixed a bug where a gameplay ability spec could be invalidated by the InternalTryActivateAbility function while looping through triggered abilities.
-* Bug Fix: Changed how we handle updating gameplay tags inside of tag count containers. When deferring the update of parent tags while removing gameplay tags, we will now call the change-related delegates after the parent tags have updated. This ensures that the tag table is in a consistent state when the delegates broadcast.
-* Bug Fix: We now make a copy of the spawned target actor array before iterating over it inside when confirming targets because some callbacks may modify the array.
-* Bug Fix: Fixed a bug where stacking GamplayEffects that did not reset the duration on additional instances of the effect being applied and with set by caller durations would only have the duration correctly set for the first instance on the stack. All other GE specs in the stack would have a duration of 1 second. Added automation tests to detect this case.
-* Bug Fix: Fixed a bug that could occur if handling gameplay event delegates modified the list of gameplay event delegates.
-* Bug Fix: Fixed a bug causing GiveAbilityAndActivateOnce to behave inconsistently.
-* Bug Fix: Reordered some operations inside FGameplayEffectSpec::Initialize to deal with a potential ordering dependency.
-* New: UGameplayAbility now has an OnRemoveAbility function. It follows the same pattern as OnGiveAbility and is only called on the primary instance of the ability or the class default object.
-* New: When displaying blocked ability tags, the debug text now includes the total number of blocked tags.
-* New: Renamed UAbilitySystemComponent::InternalServerTryActiveAbility to UAbilitySystemComponent::InternalServerTryActivateAbility.Code that was calling InternalServerTryActiveAbility should now call InternalServerTryActivateAbility.
-* New: Continue to use the filter text for displaying gameplay tags when a tag is added or deleted. The previous behaviour cleared the filter.
-* New: Don't reset the tag source when we add a new tag in the editor.
-* New: Added the ability to query an ability system component for all active gameplay effects that have a specified set of tags. The new function is called GetActiveEffectsWithAllTags and can be accessed through code or blueprints.
-* New: When root motion movement related ability tasks end they now return the movement component's movement mode to the movement mode it was in before the task started.
-* New: Made SpawnedAttributes transient so it won't save data that can become stale and incorrect. Added null checks to prevent any currently saved stale data from propagating. This prevents problems related to bad data getting stored in SpawnedAttributes.
-* API Change: AddDefaultSubobjectSet has been deprecated. AddAttributeSetSubobject should be used instead.
-* New: Gameplay Abilities can now specify the Anim Instance on which to play a montage.
-
-**[⬆ 返回目录](#table-of-contents)**
-
-<a name="changelog-4.24"></a>
-## 4.24
-
-* Fixed blueprint node Attribute variables resetting to None on compile.
-* Need to call [UAbilitySystemGlobals::InitGlobalData()](#concepts-asg-initglobaldata) to use [TargetData](#concepts-targeting-data) otherwise you will get ScriptStructCache errors and clients will be disconnected from the server. My advice is to always call this in every project now whereas before 4.24 it was optional.
-* Fixed crash when copying a GameplayTag setter to a blueprint that didn't have the variable previously defined.
-* UGameplayAbility::MontageStop() function now properly uses the OverrideBlendOutTime parameter.
-* Fixed GameplayTag query variables on components not being modified when edited.
-* Added the ability for GameplayEffectExecutionCalculations to support scoped modifiers against "temporary variables" that aren't required to be backed by an attribute capture.
-	+ Implementation basically enables GameplayTag-identified aggregators to be created as a means for an execution to expose a temporary value to be manipulated with scoped modifiers; you can now build formulas that want manipulatable values that don't need to be captured from a source or target.
-	+ To use, an execution has to add a tag to the new member variable ValidTransientAggregatorIdentifiers; those tags will show up in the calculation modifier array of scoped mods at the bottom, marked as temporary variables—with updated details customizations accordingly to support feature
-* Added restricted tag quality-of-life improvements. Removed the default option for restricted GameplayTag source. We no longer reset the source when adding restricted tags to make it easier to add several in a row.
-* APawn::PossessedBy() now sets the owner of the Pawn to the new Controller. Useful because Mixed Replication Mode expects the owner of the Pawn to be the Controller if the ASC lives on the Pawn.
-* Fixed bug with POD (Plain Old Data) in FAttributeSetInittterDiscreteLevels.
 
 **[⬆ 返回目录](#table-of-contents)**
