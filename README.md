@@ -123,6 +123,8 @@
 			- [4.8.7 GameplayCue批处理](#487-gameplaycue批处理)
 				- [4.8.7.1 手动RPC](#4871-手动rpc)
 				- [4.8.7.2 GameplayEffect中的多个GameplayCue](#4872-gameplayeffect中的多个gameplaycue)
+			- [4.8.8 GameplayCue事件](#488-gameplaycue事件)
+			- [4.8.9 GameplayCue可靠性](#489-gameplaycue可靠性)
 		- [4.9 Ability System Globals](#49-ability-system-globals)
 			- [4.9.1 InitGlobalData()](#491-initglobaldata)
 		- [4.10 预测(Prediction)](#410-预测prediction)
@@ -2583,6 +2585,45 @@ virtual bool ShouldAsyncLoadRuntimeObjectLibraries() const override
 ##### 4.8.7.2 GameplayEffect中的多个GameplayCue
 
 一个`GameplayEffect`中的所有`GameplayCue`已经由一个RPC发送了. 默认情况下, `UGameplayCueManager::InvokeGameplayCueAddedAndWhileActive_FromSpec()`会在不可靠的多播(NetMulticast)RPC中发送整个`GameplayEffectSpec`(除了转换为`FGameplayEffectSpecForRPC`)而不管`ASC`的同步模式, 取决于`GameplayEffectSpec`的内容, 这可能会使用大量带宽, 我们可以通过设置`AbilitySystem.AlwaysConvertGESpecToGCParams 1`来将其优化, 这会将`GameplayEffectSpec`转换为`FGameplayCueParameter`结构体并且RPC它而不是整个`FGameplayEffectSpecForRPC`, 这会节省带宽但是只有较少的信息, 取决于`GESpec`如何转换为`GameplayCueParameters`和你的`GameplayCue`需要知道什么.  
+
+**[⬆ 返回目录](#table-of-contents)**
+
+<a name="concepts-gc-events"></a>
+#### 4.8.8 GameplayCue事件
+
+`GameplayCue`响应特定的`EGameplayCueEvents`:
+
+| `EGameplayCueEvent` | 描述 |
+| ------------------- | ------------- |
+| `OnActive`          | `GameplayCue`被激活（添加）时调用。|
+| `WhileActive`       | `GameplayCue`活跃时调用，即便它实际上并未被应用（正在加入中等情况）。这不是`Tick`！它跟`OnActive`一样，在`GameplayCueNotify_Actor`被添加或具有相关性时调用。如果你需要`Tick()`，请使用 `GameplayCueNotify_Actor`的`Tick()`，毕竟它是`AActor`。|
+| `Removed`           | `GameplayCue`被移除时调用。`GameplayCue`蓝图里响应该事件的函数是`OnRemove`。|
+| `Executed`          | `GameplayCue`被执行时调用。instant effects or periodic `Tick()`. `GameplayCue`蓝图里响应该事件的函数是`OnExecute`。 |
+
+Use `OnActive` for anything in your `GameplayCue` that happen at the start of the `GameplayCue` but is okay if late joiners miss. Use `WhileActive` for ongoing effects in the `GameplayCue` that you would want late joiners to see. For example, if you have a `GameplayCue` for a tower structure in a MOBA exploding, you would put the initial explosion particle system and explosion sound in `OnActive` and you would put any residual ongoing fire particles or sounds in the `WhileActive`. In this scenario, it wouldn't make sense for late joiners to replay the initial explosion from `OnActive`, but you would want them to see the persistent, looping fire effects on the ground after the explosion happened from `WhileActive`. `OnRemove` should clean up anything added in `OnActive` and `WhileActive`. `WhileActive` will be called every time an Actor enters the relevancy range of a `GameplayCueNotify_Actor`. `OnRemove` will be called every time an Actor leaves relevancy range of a `GameplayCueNotify_Actor`.
+
+**[⬆ 返回目录](#table-of-contents)**
+
+<a name="concepts-gc-reliability"></a>
+#### 4.8.9 Gameplay Cue Reliability
+
+`GameplayCues` in general should be consindered unreliable and thus unsuited for anything that directly affects gameplay.
+
+**Executed GameplayCues:** These GameplayCues are applied via unreliable multicasts and are always unreliable.
+
+**GameplayCues applied from GameplayEffects:**
+* Autonomous proxy reliably receives `OnActive`, `WhileActive`, and `OnRemove`  
+`FActiveGameplayEffectsContainer::NetDeltaSerialize()` calls `UAbilitySystemComponent::HandleDeferredGameplayCues()` to call `OnActive` and `WhileActive`. `FActiveGameplayEffectsContainer::RemoveActiveGameplayEffectGrantedTagsAndModifiers()` makes the call to `OnRemoved`.
+* Simulated proxies reliably receive `WhileActive` and `OnRemove`  
+`UAbilitySystemComponent::MinimalReplicationGameplayCues`'s replication calls `WhileActive` and `OnRemove`. The `OnActive` event is called by an unreliable multicast.
+
+**GameplayCues applied without a GameplayEffect:**
+* Autonomous proxy reliably recieves `OnRemove`  
+The `OnActive` and `WhileActive` events are called by an unreliable multicast.
+* Simulated proxies reliably recieve `WhileActive` and `OnRemove`  
+`UAbilitySystemComponent::MinimalReplicationGameplayCues`'s replication calls `WhileActive` and `OnRemove`. The `OnActive` event is called by an unreliable multicast.
+
+If you need something in a `GameplayCue` to be 'reliable', then apply it from a `GameplayEffect` and use `WhileActive` to add the FX and `OnRemove` to remove the FX.
 
 **[⬆ 返回目录](#table-of-contents)**
 
