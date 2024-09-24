@@ -1,14 +1,11 @@
 **更新时间：2024/09/24(进行中：第一节)**  
-本文是接续[BillEliot/GASDocumentation_Chinese](https://github.com/BillEliot/GASDocumentation_Chinese) 进行的翻译版本。
-
-原翻译版本截至2021年3月，本文预计将花费3个月时间追上英文原版的进度。感谢BillEliot在翻译上的辛勤工作！
-
+本文是接续[BillEliot/GASDocumentation_Chinese](https://github.com/BillEliot/GASDocumentation_Chinese)进行的翻译版本。  
+原翻译版本截至2021年3月，本文预计将花费3个月时间追上英文原版[tranek/GASDocumentation](https://github.com/BillEliot/GASDocumentation)的进度。  
+感谢tranek对社区的杰出贡献以及BillEliot在翻译上的辛勤工作！  
 注意事项：
 1. 由于新的翻译者水平十分有限，翻译水平不如机翻也是有可能的，介意者请立即关闭该网页；
 2. 针对翻译出现的谬误，欢迎提issue，但不接受PR。若有无关issue会立即关闭；
 3. 本文将去掉“GAS Changelog”一节，需要的话请自行前往英文原版进行查询。
-
-英文原版地址：[tranek/GASDocumentation](https://github.com/BillEliot/GASDocumentation) 
 
 # GASDocumentation
 
