@@ -268,7 +268,7 @@ AI控制的小兵没有预先定义的`GameplayAbility`. 红方小兵有较多�
 1. 在编辑器中启用GameplayAbilitySystem插件.
 2. 编辑`YourProjectName.Build.cs`, 添加`"GameplayAbilities"`, `"GameplayTags"`, `"GameplayTasks"`到你的`PrivateDependencyModuleNames`.
 3. 刷新/重新生成Visual Studio项目文件.
-4. 从4.24开始, 需要强制调用`UAbilitySystemGlobals::Get().InitGlobalData()`来使用[`TargetData`](#concepts-targeting-data), 样例项目在`UAssetManager::StartInitialLoading()`中调用该函数. 参阅[`InitGlobalData()`](#concepts-asg-initglobaldata)获取更多信息.
+4. 从4.24开始到5.2, 需要强制调用`UAbilitySystemGlobals::Get().InitGlobalData()`来使用[`TargetData`](#concepts-targeting-data), 样例项目在`UAssetManager::StartInitialLoading()`中调用该函数. 从5.3开始这个函数将被自动调用，参阅[`InitGlobalData()`](#concepts-asg-initglobaldata)获取更多信息.
 
 这就是你启用GAS所需做的全部了. 从这里开始, 添加一个[`ASC`](#concepts-asc)和[`AttributeSet`](#concepts-as)到你的`Character`或`PlayerState`, 并开始着手[`GameplayAbility`](#concepts-ga)和[`GameplayEffect`](#concepts-ge)!
 
@@ -817,7 +817,7 @@ if (Attribute == GetMoveSpeedAttribute())
 ```c++
 virtual void OnAttributeAggregatorCreated(const FGameplayAttribute& Attribute, FAggregator* NewAggregator) const override;
 
-void UGSAttributeSetBase::OnAttributeAggregatorCreated(const FGameplayAttribute& Attribute, FAggregator* NewAggregator) const
+void UGDAttributeSetBase::OnAttributeAggregatorCreated(const FGameplayAttribute& Attribute, FAggregator* NewAggregator) const
 {
 	Super::OnAttributeAggregatorCreated(Attribute, NewAggregator);
 
@@ -1031,6 +1031,7 @@ float FAggregatorModChannel::EvaluateWithBase(float InlineBaseValue, const FAggr
 {
 	...
 	float Multiplicitive = MultiplyMods(Mods[EGameplayModOp::Multiplicitive], Parameters);
+	float Division = MultiplyMods(Mods[EGameplayModOp::Division], Parameters);
 	...
 
 	return ((InlineBaseValue + Additive) * Multiplicitive) / Division;
@@ -1190,7 +1191,7 @@ float GetSetByCallerMagnitude(FName DataName, bool WarnIfNotFound = true, float 
 float GetSetByCallerMagnitude(FGameplayTag DataTag, bool WarnIfNotFound = true, float DefaultIfNotFound = 0.f) const;
 ```
 
-我建议使用`GameplayTag`形式而不是`FName`形式, 这可以避免蓝图中的拼写错误, 并且当`GameplayEffectSpec`同步时, `GameplayTag`比`FName`在网络传输中更有效率, 因为`TMap`也会同步.  
+我建议使用`GameplayTag`形式而不是`FName`形式, 这可以避免蓝图中的拼写错误.   
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -1894,7 +1895,9 @@ enum class EGDAbilityInputID : uint8
 
 ```c++
 // Bind to AbilitySystemComponent
-AbilitySystemComponent->BindAbilityActivationToInputComponent(PlayerInputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"), FString("CancelTarget"), FString("EGDAbilityInputID"), static_cast<int32>(EGDAbilityInputID::Confirm), static_cast<int32>(EGDAbilityInputID::Cancel)));
+FTopLevelAssetPath AbilityEnumAssetPath = FTopLevelAssetPath(FName("/Script/GASDocumentation"), FName("EGDAbilityInputID"));
+AbilitySystemComponent->BindAbilityActivationToInputComponent(PlayerInputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"),
+	FString("CancelTarget"), AbilityEnumAssetPath, static_cast<int32>(EGDAbilityInputID::Confirm), static_cast<int32>(EGDAbilityInputID::Cancel)));
 ```
 
 如果你的`ASC`位于`PlayerState`, `SetupPlayerInputComponent()`中有一个潜在的竞争情况就是`PlayerState`还没有同步到客户端, 因此, 我建议尝试在`SetupPlayerInputComponent()`和`OnRep_PlayerState()`中绑定输入, 只有`OnRep_PlayerState()`自身是不充分的, 因为可能有种情况是当`PlayerState`在`PlayerController`告知客户端调用用于创建`InputComponent`的`ClientRestart()`前同步时, Actor的`InputComponent`可能为NULL. 样例项目演示了尝试使用一个布尔值控制流程从而在两个位置绑定, 这样实际上只绑定了一次.  
@@ -1911,7 +1914,7 @@ AbilitySystemComponent->BindAbilityActivationToInputComponent(PlayerInputCompone
 如果你不想你的`GameplayAbility`在按键按下时自动激活, 但是仍想将它们绑定到输入以与`AbilityTask`一起使用, 你可以在`UGameplayAbility`子类中添加一个新的布尔变量, `bActivateOnInput`, 其默认值为`true`并重写`UAbilitySystemComponent::AbilityLocalInputPressed()`.  
 
 ```c++
-void UGSAbilitySystemComponent::AbilityLocalInputPressed(int32 InputID)
+void UGDAbilitySystemComponent::AbilityLocalInputPressed(int32 InputID)
 {
 	// Consume the input if this InputID is overloaded with GenericConfirm/Cancel and the GenericConfim/Cancel callback is bound
 	if (IsGenericConfirmInputBound(InputID))
@@ -1950,7 +1953,7 @@ void UGSAbilitySystemComponent::AbilityLocalInputPressed(int32 InputID)
 				}
 				else
 				{
-					UGSGameplayAbility* GA = Cast<UGSGameplayAbility>(Spec.Ability);
+					UGDGameplayAbility* GA = Cast<UGDGameplayAbility>(Spec.Ability);
 					if (GA && GA->bActivateOnInput)
 					{
 						// Ability is not active, so try to activate it
@@ -2251,7 +2254,7 @@ virtual bool ShouldDoServerAbilityRPCBatch() const override { return true; }
 这个方法只能在C++中完成, 并且只能通过`FGameplayAbilitySpecHandle`来激活Ability.  
 
 ```c++
-bool UGSAbilitySystemComponent::BatchRPCTryActivateAbility(FGameplayAbilitySpecHandle InAbilityHandle, bool EndAbilityImmediately)
+bool UGDAbilitySystemComponent::BatchRPCTryActivateAbility(FGameplayAbilitySpecHandle InAbilityHandle, bool EndAbilityImmediately)
 {
 	bool AbilityActivated = false;
 	if (InAbilityHandle.IsValid())
@@ -2264,7 +2267,7 @@ bool UGSAbilitySystemComponent::BatchRPCTryActivateAbility(FGameplayAbilitySpecH
 			FGameplayAbilitySpec* AbilitySpec = FindAbilitySpecFromHandle(InAbilityHandle);
 			if (AbilitySpec)
 			{
-				UGSGameplayAbility* GSAbility = Cast<UGSGameplayAbility>(AbilitySpec->GetPrimaryInstance());
+				UGDGameplayAbility* GSAbility = Cast<UGDGameplayAbility>(AbilitySpec->GetPrimaryInstance());
 				GSAbility->ExternalEndAbility();
 			}
 		}
@@ -2357,7 +2360,7 @@ Task->EventReceived.AddDynamic(this, &UGDGA_FireGun::EventReceived);
 Task->ReadyForActivation();
 ```
 
-在蓝图中, 我们只需使用为`AbilityTask`创建的蓝图节点, 不必调用`ReadyForActivate()`, 其由`Engine/Source/Editor/GameplayTasksEditor/Private/K2Node_LatentGameplayTaskCall.cpp`自动调用. `K2Node_LatentGameplayTaskCall`也会自动调用`BeginSpawningActor()`和`FinishSpawningActor()`(如果它们存在于你的`AbilityTask`类中, 查看`AbilityTask_WaitTargetData`), 再强调一遍, `K2Node_LatentGameplayTaskCall`只会对蓝图做这些自动操作, 在C++中, 我们必须手动调用`ReadyForActivation()`, `BeginSpawningActor()`和`FinishSpawningActor()`.  
+在蓝图中, 我们只需使用为`AbilityTask`创建的蓝图节点, 不必调用`ReadyForActivation()`, 其由`Engine/Source/Editor/GameplayTasksEditor/Private/K2Node_LatentGameplayTaskCall.cpp`自动调用. `K2Node_LatentGameplayTaskCall`也会自动调用`BeginSpawningActor()`和`FinishSpawningActor()`(如果它们存在于你的`AbilityTask`类中, 查看`AbilityTask_WaitTargetData`), 再强调一遍, `K2Node_LatentGameplayTaskCall`只会对蓝图做这些自动操作, 在C++中, 我们必须手动调用`ReadyForActivation()`, `BeginSpawningActor()`和`FinishSpawningActor()`.  
 
 ![Blueprint WaitTargetData AbilityTask](https://raw.githubusercontent.com/BillEliot/GASDocumentation_Chinese/main/Images/abilitytask.png)  
 
@@ -2638,7 +2641,7 @@ AbilitySystemGlobalsClassName="/Script/ParagonAssets.PAAbilitySystemGlobals"
 <a name="concepts-asg-initglobaldata"></a>
 #### 4.9.1 InitGlobalData()
 
-从UE 4.24开始, 必须调用`UAbilitySystemGlobals::Get().InitGlobalData()`来使用[`TargetData`](#concepts-targeting-data), 否则你会遇到关于`ScriptStructCache`的错误, 并且客户端会从服务端断开连接, 该函数只需要在项目中调用一次. Fortnite从`UAssetManager::StartInitialLoading()`调用该函数, 而Paragon是从`UEngine::Init()`中调用的. 我发现将其放到`UAssetManager::StartInitialLoading()`是个好位置, 这也是样例项目中使用的. 我觉得你应该复制这段模板代码到你自己的项目中以避免出现`TargetData`的使用问题.  
+从UE 4.24到5.2版本, 必须调用`UAbilitySystemGlobals::Get().InitGlobalData()`来使用[`TargetData`](#concepts-targeting-data), 否则你会遇到关于`ScriptStructCache`的错误, 并且客户端会从服务端断开连接, 该函数只需要在项目中调用一次. Fortnite从`UAssetManager::StartInitialLoading()`调用该函数, 而Paragon是从`UEngine::Init()`中调用的. 我发现将其放到`UAssetManager::StartInitialLoading()`是个好位置, 这也是样例项目中使用的. 我觉得你应该复制这段模板代码到你自己的项目中以避免出现`TargetData`的使用问题. 从5.3开始这个函数将被自动调用. 
 
 如果你在使用`AbilitySystemGlobals GlobalAttributeSetDefaultsTableNames`时发生崩溃, 你需要像Fortnite一样在`AssetManager`或`GameInstance`中调用`UAssetManager::StartInitialLoading()`.  
 
@@ -2780,6 +2783,92 @@ Epic最近发起了一项倡议, 将使用新的网络预测插件替换`Charact
 `TargetData`一般由[Target Actor](#concepts-targeting-actors)或者手动创建, 供[AbilityTask](#concepts-at)使用, 或者[GameplayEffect](#concepts-ge)通过[EffectContext](#concepts-ge-context)使用. 因为其位于`EffectContext`中, 所以[Execution](#concepts-ge-ec), [MMC](#concepts-ge-mmc), [GameplayCue](#concepts-gc)和[AttributeSet](#concepts-as)的后端函数可以访问该`TargetData`.  
 
 我们一般不直接传递`FGameplayAbilityTargetData`而是使用[FGameplayAbilityTargetDataHandle](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/Abilities/FGameplayAbilityTargetDataHandle/index.html), 其包含一个`FGameplayAbilityTargetData`指针类型的TArray, 这个中间结构体可以为`TargetData`的多态性提供支持.  
+
+An example of inherited from `FGameplayAbilityTargetData`:
+```c++
+USTRUCT(BlueprintType)
+struct MYGAME_API FGameplayAbilityTargetData_CustomData : public FGameplayAbilityTargetData
+{
+	GENERATED_BODY()
+public:
+	FGameplayAbilityTargetData_CustomData()
+	{ }
+	UPROPERTY()
+	FName CoolName = NAME_None;
+	UPROPERTY()
+	FPredictionKey MyCoolPredictionKey;
+	// This is required for all child structs of FGameplayAbilityTargetData
+	virtual UScriptStruct* GetScriptStruct() const override
+	{
+		return FGameplayAbilityTargetData_CustomData::StaticStruct();
+	}
+	// This is required for all child structs of FGameplayAbilityTargetData
+	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+	{
+		// The engine already defined NetSerialize for FName & FPredictionKey, thanks Epic!
+		CoolName.NetSerialize(Ar, Map, bOutSuccess);
+		MyCoolPredictionKey.NetSerialize(Ar, Map, bOutSuccess);
+		bOutSuccess = true;
+		return true;
+	}
+}
+template<>
+struct TStructOpsTypeTraits<FGameplayAbilityTargetData_CustomData> : public TStructOpsTypeTraitsBase2<FGameplayAbilityTargetData_CustomData>
+{
+	enum
+	{
+		WithNetSerializer = true // This is REQUIRED for FGameplayAbilityTargetDataHandle net serialization to work
+	};
+};
+```
+For adding the target data to a handle:
+```c++
+UFUNCTION(BlueprintPure)
+FGameplayAbilityTargetDataHandle MakeTargetDataFromCustomName(const FName CustomName)
+{
+	// Create our target data type, 
+	// Handle's automatically cleanup and delete this data when the handle is destructed, 
+	// if you don't add this to a handle then be careful because this deals with memory management and memory leaks so its safe to just always add it to a handle at some point in the frame!
+	FGameplayAbilityTargetData_CustomData* MyCustomData = new FGameplayAbilityTargetData_CustomData();
+	// Setup the struct's information to use the inputted name and any other changes we may want to do
+	MyCustomData->CoolName = CustomName;
+
+	// Make our handle wrapper for Blueprint usage
+	FGameplayAbilityTargetDataHandle Handle;
+	// Add the target data to our handle
+	Handle.Add(MyCustomData);
+	// Output our handle to Blueprint
+	return Handle;
+}
+```
+For getting values it requires doing type safety checking, because the only way to get values from the handle's target data is by using generic C/C++ casting for it which is *NOT* type safe which can cause object slicing and crashes. For type checking there are multiple ways of doing this(however you want honestly) two common ways are:
+- Gameplay Tag(s): You can use a subclass hierarchy where you know that anytime a certain code architecture's functionality occurs, you can cast for the base parent type and get its gameplay tag(s) and then compare against those for casting for inherited classes.
+- Script Struct & Static Structs: You can instead do direct class comparison(which can involve a lot of IF statements or making some template functions), below is an example of doing this but basically you can get the script struct from any `FGameplayAbilityTargetData`(this is a nice advantage of it being a `USTRUCT` and requiring any inherited classes to specify the struct type in `GetScriptStruct`) and compare if its the type you're looking for. Below is an example of using these functions for type checking:
+```c++
+UFUNCTION(BlueprintPure)
+FName GetCoolNameFromTargetData(const FGameplayAbilityTargetDataHandle& Handle, const int Index)
+{   
+	// NOTE, there is two versions of this '::Get(int32 Index)' function; 
+	// 1) const version that returns 'const FGameplayAbilityTargetData*', good for reading target data values 
+	// 2) non-const version that returns 'FGameplayAbilityTargetData*', good for modifying target data values
+	FGameplayAbilityTargetData* Data = Handle.Get(Index); // This will valid check the index for you 
+    
+	// Valid check we have something to use, null data means nothing to cast for
+	if(Data == nullptr)
+	{
+		return NAME_None;
+	}
+	// This is basically the type checking pass, static_cast does not have type safety, this is why we do this check.
+	// If we don't do this then it will object slice the struct and thus we have no way of making sure its that type.
+	if(Data->GetScriptStruct() == FGameplayAbilityTargetData_CustomData::StaticStruct())
+	{
+		// Here is when you would do the cast because we know its the correct type already
+		FGameplayAbilityTargetData_CustomData* CustomData = static_cast<FGameplayAbilityTargetData_CustomData*>(Data);    
+		return CustomData->CoolName;
+	}
+	return NAME_None;
+}
+```
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -3013,15 +3102,15 @@ GASShooter实现了一个按钮交互系统, 玩家可以按下或按住'E'键�
 
 GAS有两种技术可以在运行时解决这些问题 —— [showdebug abilitysystem](#debugging-sd)和在[GameplayDebugger](#debugging-gd)中Hook.  
 
-**Tip:** UE倾向于优化C++代码, 这使得某些函数变得很难调试, 当深入追踪代码时很少遇到这种情况. 如果将Visual Studio的解决方案配置设置为`DebugGame Editor`仍然不能追踪代码或者监视变量, 可以使用`PRAGMA_DISABLE_OPTIMIZATION_ACTUAL`和`PRAGMA_ENABLE_OPTIMIZATION_ACTUAL`宏包裹优化函数来关闭优化, 这不能在插件代码中使用除非从源码重新编译插件. 这可以或不可以用于inline函数, 取决于它的作用和位置. 确保完成调试后移除这两个宏!  
+**Tip:** UE倾向于优化C++代码, 这使得某些函数变得很难调试, 当深入追踪代码时很少遇到这种情况. 如果将Visual Studio的解决方案配置设置为`DebugGame Editor`仍然不能追踪代码或者监视变量, 可以使用`UE_DISABLE_OPTIMIZATION`和`UE_ENABLE_OPTIMIZATION`宏或者`CoreMiscDefines.h`里定义的带`_SHIP`后缀的版本来包裹优化函数, 这不能在插件代码中使用除非从源码重新编译插件. 这可以或不可以用于inline函数, 取决于它的作用和位置. 确保完成调试后移除这两个宏!  
 
 ```c++
-PRAGMA_DISABLE_OPTIMIZATION_ACTUAL
+UE_DISABLE_OPTIMIZATION
 void MyClass::MyFunction(int32 MyIntParameter)
 {
 	// My code
 }
-PRAGMA_ENABLE_OPTIMIZATION_ACTUAL
+UE_ENABLE_OPTIMIZATION
 ```
 
 **[⬆ 返回目录](#table-of-contents)**
@@ -3033,22 +3122,28 @@ PRAGMA_ENABLE_OPTIMIZATION_ACTUAL
 
 第一页显示了所有`Attribute`的`CurrentValue`: ![First Page of showdebug abilitysystem](https://raw.githubusercontent.com/BillEliot/GASDocumentation_Chinese/main/Images/showdebugpage1.png)  
 
-第二页显示了所有应用到你的`持续(Duration)`和`无限(Infinite)GameplayEffect`, 它们的堆栈数, 使用的`GameplayTag`和`Modifier`. ![Second Page of showdebug abilitysystem](https://raw.githubusercontent.com/BillEliot/GASDocumentation_Chinese/main/Images/showdebugpage2.png)  
+第二页显示了所有应用到你的持续(Duration)和无限(Infinite)`GameplayEffect`, 它们的堆栈数, 使用的`GameplayTag`和`Modifier`. ![Second Page of showdebug abilitysystem](https://raw.githubusercontent.com/BillEliot/GASDocumentation_Chinese/main/Images/showdebugpage2.png)  
 
-第三页显示了所有授予到你的`GameplayAbility`, 无论其是否正在运行, 无论其是否被阻止激活, 和当前正在运行的`AbilityTask`的状态.  ![Third Page of showdebug abilitysystem](https://raw.githubusercontent.com/BillEliot/GASDocumentation_Chinese/main/Images/showdebugpage3.png)  
+第三页显示了所有授予到你的`GameplayAbility`, 无论其是否正在运行, 无论其是否被阻止激活, 和当前正在运行的`AbilityTask`的状态.  ![Third Page of showdebug abilitysystem](https://raw.githubusercontent.com/BillEliot/GASDocumentation_Chinese/main/Images/showdebugpage3.png) 
 
-你可以使用`PageUp`和`PageDown`切换Target, 页面只显示你本地控制的`Character`中的`ASC`数据, 然而, 使用`AbilitySystem.Debug.NextTarget`和`AbilitySystem.Debug.PrevTarget`可以显示其他`ASC`的数据, 但是不会显示调试信息的上半部分, 也不会更新绿色目标长方体, 因此无法知道当前定位的是哪个`ASC`, 该BUG已经被提交到[https://issues.unrealengine.com/issue/UE-90437.](https://issues.unrealengine.com/issue/UE-90437).  
+为了在目标中循环（用Actor周围的绿色长方体表示）, 使用`PageUp`按键或者控制台命令`NextDebugTarget`前往下一个目标，`PageDown`按键或控制台命令`PreviousDebugTarget`前往上一个目标.
 
-**Note:**  为了`showdebug abilitysystem`可以使用, 必须在GameMode中选择一个实际的HUD类, 否则就会找不到该命令并返回"Unknown Command".  
+**Note:** 为了能够根据当前选定的调试Actor更新Ability System信息，你需要像下面这样在`DefaultGame.ini`的`AbilitySystemGlobals`中设置`bUseDebugTargetFromHud=true`：
+```
+[/Script/GameplayAbilities.AbilitySystemGlobals]
+bUseDebugTargetFromHud=true
+```
+
+**Note:**  为了可以使用`showdebug abilitysystem`, 必须在GameMode中选择一个实际的HUD类, 否则就会找不到该命令并返回“Unknown Command”.  
 
 **[⬆ 返回目录](#table-of-contents)**
 
 <a name="debugging-gd"></a>
 ### 6.2 Gameplay Debugger
 
-GAS向Gameplay Debugger中添加了功能, 使用``反引号(`)``键以访问Gameplay Debugger. 按下小键盘的3键以启用Ability分类, 取决于你所拥有的插件, 分类可能是不同的. 如果你的键盘没有小键盘, 比如笔记本, 那么你可以在项目设置(Project Settings)里修改键盘绑定.  
+GAS向Gameplay Debugger中添加了功能, 使用反引号(`)键以访问Gameplay Debugger. 按下小键盘的3键以启用Ability分类, 取决于你所拥有的插件, 分类可能是不同的. 如果你的键盘没有小键盘, 比如笔记本, 那么你可以在项目设置(Project Settings)里修改键盘绑定.  
 
-当你想要查看其他Character的`GameplayTag`, `GameplayEffect`和`GameplayAbility`时可以使用Gameplay Debugger, 可惜的是它不能显示Target的`Attribute`中的`CurrentValue`. 它会定位屏幕中央的任何Character, 你可以通过选择编辑器世界大纲(World Outliner)或者看向另一个不同的Character并再次按下``反引号(`)``键来修改Target. 当前监视的Character上方有最大的红色圆.  
+当你想要查看其他Character的`GameplayTag`, `GameplayEffect`和`GameplayAbility`时可以使用Gameplay Debugger, 可惜的是它不能显示Target的`Attribute`中的`CurrentValue`. 它会定位屏幕中央的任何Character, 你可以通过选择编辑器世界大纲(World Outliner)或者看向另一个不同的Character并再次按下反引号(`)键来修改Target. 当前监视的Character上方有最大的红色圆.  
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -3295,7 +3390,7 @@ ActiveGameplayEffects.MarkItemDirty(*AGE);
 
 *[官方文档](https://docs.unrealengine.com/en-US/InteractiveExperiences/GameplayAbilitySystem/index.html)  
 *源代码! 特别是`GameplayPrediction.h`.  
-*[Epic的Lyra样例项目](https://unrealengine.com/marketplace/en-US/learn/lyra)
+*[Epic的Lyra样例项目](https://unrealengine.com/marketplace/en-US/learn/lyra)  
 *[Epic的Action RPG样例项目](https://www.unrealengine.com/marketplace/en-US/product/action-rpg)  
 *[来自Epic的Dave Ratti回复社区关于GAS的问题](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89)  
 *[Unreal Slackers Discord](https://unrealslackers.org)有一个专注于GAS`#gameplay-abilities-plugin`的文字频道  
