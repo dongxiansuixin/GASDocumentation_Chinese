@@ -33,6 +33,7 @@
 			- [4.1.2 设置和初始化](#412-设置和初始化)
 		- [4.2 Gameplay Tags](#42-gameplay-tags)
 			- [4.2.1 响应Gameplay Tags的变化](#421-响应gameplay-tags的变化)
+			- [4.2.2 从插件.ini文件加载Gameplay Tags](#422-从插件ini文件加载gameplay-tags)
 		- [4.3 Attribute](#43-attribute)
 			- [4.3.1 Attribute定义](#431-attribute定义)
 			- [4.3.2 BaseValue vs. CurrentValue](#432-basevalue-vs-currentvalue)
@@ -474,6 +475,25 @@ AbilitySystemComponent->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTa
 ```c++
 virtual void StunTagChanged(const FGameplayTag CallbackTag, int32 NewCount);
 ```
+
+**[⬆ 返回目录](#table-of-contents)**
+
+<a name="concepts-gt-loadfromplugin"></a>
+### 4.2.2 从插件.ini文件加载Gameplay Tags
+
+如果你创建了拥有自己的、带有`GameplayTags`ini文件的插件，你可以在插件`StartupModule()`函数中加载插件的`GameplayTag`ini目录。
+例如，下面是UE自带的插件CommonConversation的做法：
+```c++
+void FCommonConversationRuntimeModule::StartupModule()
+{
+	TSharedPtr<IPlugin> ThisPlugin = IPluginManager::Get().FindPlugin(TEXT("CommonConversation"));
+	check(ThisPlugin.IsValid());
+	
+	UGameplayTagsManager::Get().AddTagIniSearchPath(ThisPlugin->GetBaseDir() / TEXT("Config") / TEXT("Tags"));
+	//...
+}
+```
+它会查找`Plugins\CommonConversation\Config\Tags`并在项目启动时加载所有含有`GameplayTag`的ini文件到项目中，前提是插件已经启用。
 
 **[⬆ 返回目录](#table-of-contents)**
 
