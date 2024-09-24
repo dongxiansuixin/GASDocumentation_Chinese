@@ -3458,13 +3458,13 @@ AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, FG
 <a name="resources"></a>
 # 11. 其他资源
 
-*[官方文档](https://docs.unrealengine.com/en-US/InteractiveExperiences/GameplayAbilitySystem/index.html)  
-*源代码! 特别是`GameplayPrediction.h`.  
-*[Epic的Lyra样例项目](https://unrealengine.com/marketplace/en-US/learn/lyra)  
-*[Epic的Action RPG样例项目](https://www.unrealengine.com/marketplace/en-US/product/action-rpg)  
-*[来自Epic的Dave Ratti回复社区关于GAS的问题](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89)  
-*[Unreal Slackers Discord](https://unrealslackers.org)有一个专注于GAS`#gameplay-abilities-plugin`的文字频道  
-*[Dan 'Pan'的Github库](https://github.com/Pantong51/GASContent)  
-*[SabreDartStudios的YouTube视频](https://www.youtube.com/channel/UCCFUhQ6xQyjXDZ_d6X_H_-A)
+* [官方文档](https://docs.unrealengine.com/en-US/InteractiveExperiences/GameplayAbilitySystem/index.html)  
+* 源代码! 特别是`GameplayPrediction.h`.  
+* [Epic的Lyra样例项目](https://unrealengine.com/marketplace/en-US/learn/lyra)  
+* [Epic的Action RPG样例项目](https://www.unrealengine.com/marketplace/en-US/product/action-rpg)  
+* [来自Epic的Dave Ratti回复社区关于GAS的问题](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89)  
+* [Unreal Slackers Discord](https://unrealslackers.org)有一个专注于GAS`#gameplay-abilities-plugin`的文字频道  
+* [Dan 'Pan'的Github库](https://github.com/Pantong51/GASContent)  
+* [SabreDartStudios的YouTube视频](https://www.youtube.com/channel/UCCFUhQ6xQyjXDZ_d6X_H_-A)
 
 **[⬆ 返回目录](#table-of-contents)**
