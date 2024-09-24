@@ -93,6 +93,7 @@
 			- [4.6.3 授予Ability](#463-授予ability)
 			- [4.6.4 激活Ability](#464-激活ability)
 				- [4.6.4.1 被动Ability](#4641-被动ability)
+				- [4.6.4.2 激活失败相关Tag](#4642-激活失败相关Tag)
 			- [4.6.5 取消Ability](#465-取消ability)
 			- [4.6.6 获取激活的Ability](#466-获取激活的ability)
 			- [4.6.7 实例化策略](#467-实例化策略)
@@ -2078,6 +2079,37 @@ Epic描述该函数为初始化被动Ability的正确位置和应该做一些类
 
 **[⬆ 返回目录](#table-of-contents)**
 
+<a name="concepts-ga-activating-failedtags"></a>
+##### 4.6.4.2 激活失败相关Tag
+
+ability包含告诉你为何激活失败的默认逻辑。为启用它，你需要设置对应默认失败情形的`GameplayTag`。  
+把这些tag（或你自己命名）添加到你的项目中：
+```
++GameplayTagList=(Tag="Activation.Fail.BlockedByTags",DevComment="")
++GameplayTagList=(Tag="Activation.Fail.CantAffordCost",DevComment="")
++GameplayTagList=(Tag="Activation.Fail.IsDead",DevComment="")
++GameplayTagList=(Tag="Activation.Fail.MissingTags",DevComment="")
++GameplayTagList=(Tag="Activation.Fail.Networking",DevComment="")
++GameplayTagList=(Tag="Activation.Fail.OnCooldown",DevComment="")
+```
+然后把这些加到`DefaultGame.ini`中：
+```
+[/Script/GameplayAbilities.AbilitySystemGlobals]
+ActivateFailIsDeadName=Activation.Fail.IsDead
+ActivateFailCooldownName=Activation.Fail.OnCooldown
+ActivateFailCostName=Activation.Fail.CantAffordCost
+ActivateFailTagsBlockedName=Activation.Fail.BlockedByTags
+ActivateFailTagsMissingName=Activation.Fail.MissingTags
+ActivateFailNetworkingName=Activation.Fail.Networking
+```
+现在只要有ability激活失败，对应的`GameplayTag`将会在控制台输出信息，也可在`showdebug AbilitySystem`界面看到。
+```
+LogAbilitySystem: Display: InternalServerTryActivateAbility. Rejecting ClientActivation of Default__GA_FireGun_C. InternalTryActivateAbility failed: Activation.Fail.BlockedByTags
+LogAbilitySystem: Display: ClientActivateAbilityFailed_Implementation. PredictionKey :109 Ability: Default__GA_FireGun_C
+```
+
+**[⬆ 返回目录](#table-of-contents)**
+
 <a name="concepts-ga-cancelabilities"></a>
 #### 4.6.5 取消Ability
 
@@ -3363,12 +3395,12 @@ ActiveGameplayEffects.MarkItemDirty(*AGE);
 **[⬆ 返回目录](#table-of-contents)**
 
 <a name="troubleshooting-enumnamesarenowpathnames"></a>
-### 9.6 枚举名称现在由路径名表示
+### 9.6 枚举名现在由路径名表示
 如果你看到如下编译警告：
 ```
 warning C4996: 'FGameplayAbilityInputBinds::FGameplayAbilityInputBinds': Enum names are now represented by path names. Please use a version of FGameplayAbilityInputBinds constructor that accepts FTopLevelAssetPath. Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
 ```
-UE 5.1已放弃在`FGameplayAbilityInputBinds`构造函数中使用`FString`表示枚举名。我们需要传入一个`FTopLevelAssetPath`作为替代。
+UE 5.1已放弃在`FGameplayAbilityInputBinds`构造函数中使用`FString`表示枚举名。我们需要传入一个`FTopLevelAssetPath`作为替代。  
 旧方法：
 ```c++
 AbilitySystemComponent->BindAbilityActivationToInputComponent(InputComponent, FGameplayAbilityInputBinds(FString("ConfirmTarget"),
