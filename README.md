@@ -620,7 +620,7 @@ AbilitySystemComponent->ForceReplication();
 
 在物品类实例中存储普通浮点数而不是`Attribute`, Fortnite和[GASShooter](https://github.com/tranek/GASShooter)就是这样处理枪械子弹的, 对于枪械, 在其实例中存储可同步的浮点数(COND_OwnerOnly), 比如最大弹匣量, 当前弹匣中弹药量, 剩余弹药量等等, 如果枪械需要共享剩余弹药量, 那么就将剩余弹药量移到Character中共享的弹药`AttributeSet`里作为一个`Attribute`(换弹Ability可以使用一个`Cost GE`从剩余弹药量中填充枪械的弹匣弹药量浮点). 因为没有为当前弹匣弹药量使用`Attribute`, 所以需要重写`UGameplayAbility`中的一些函数来检查和应用枪械中浮点数的花销(cost). 当授予Ability时将枪械在[GameplayAbilitySpec](https://github.com/tranek/GASDocumentation#concepts-ga-spec)中转换为`SourceObject`, 这意味着可以在Ability中访问授予Ability的枪械.  
 
-为了防止在全自动射击过程中枪械会反向同步弹药量并扰乱本地弹药量(译者注: 通俗解释就是因为存在同步延迟且在连续射击这一高同步过程中, 客户端的弹药量未来得及和服务端同步, 造成弹药量减少后又突然变多的现象), 如果玩家拥有`IsFiring`的`GameplayTag`, 就在PreReplication()中禁用同步, 本质上是要在其中做自己的本地预测.  
+为了防止在全自动射击过程中枪械会反向同步弹药量并扰乱本地弹药量（*译者注: 通俗解释就是因为存在同步延迟且在连续射击这一高同步过程中, 客户端的弹药量未来得及和服务端同步, 造成弹药量减少后又突然变多的现象*）, 如果玩家拥有`IsFiring`的`GameplayTag`, 就在PreReplication()中禁用同步, 本质上是要在其中做自己的本地预测.  
 
 ```c++
 void AGSWeapon::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
@@ -2784,7 +2784,7 @@ Epic最近发起了一项倡议, 将使用新的网络预测插件替换`Charact
 
 我们一般不直接传递`FGameplayAbilityTargetData`而是使用[FGameplayAbilityTargetDataHandle](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/Abilities/FGameplayAbilityTargetDataHandle/index.html), 其包含一个`FGameplayAbilityTargetData`指针类型的TArray, 这个中间结构体可以为`TargetData`的多态性提供支持.  
 
-An example of inherited from `FGameplayAbilityTargetData`:
+继承`FGameplayAbilityTargetData`的一个例子：
 ```c++
 USTRUCT(BlueprintType)
 struct MYGAME_API FGameplayAbilityTargetData_CustomData : public FGameplayAbilityTargetData
@@ -2797,12 +2797,12 @@ public:
 	FName CoolName = NAME_None;
 	UPROPERTY()
 	FPredictionKey MyCoolPredictionKey;
-	// This is required for all child structs of FGameplayAbilityTargetData
+	// 每个FGameplayAbilityTargetData的子结构体都需要这个方法
 	virtual UScriptStruct* GetScriptStruct() const override
 	{
 		return FGameplayAbilityTargetData_CustomData::StaticStruct();
 	}
-	// This is required for all child structs of FGameplayAbilityTargetData
+	// 每个FGameplayAbilityTargetData的子结构体都需要这个方法
 	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 	{
 		// The engine already defined NetSerialize for FName & FPredictionKey, thanks Epic!
@@ -2817,52 +2817,47 @@ struct TStructOpsTypeTraits<FGameplayAbilityTargetData_CustomData> : public TStr
 {
 	enum
 	{
-		WithNetSerializer = true // This is REQUIRED for FGameplayAbilityTargetDataHandle net serialization to work
+		WithNetSerializer = true // 要使得FGameplayAbilityTargetDataHandle网络同步可以工作，这个是必要的
 	};
 };
 ```
-For adding the target data to a handle:
+添加`TargetData`到Handle中：
 ```c++
 UFUNCTION(BlueprintPure)
 FGameplayAbilityTargetDataHandle MakeTargetDataFromCustomName(const FName CustomName)
 {
-	// Create our target data type, 
-	// Handle's automatically cleanup and delete this data when the handle is destructed, 
-	// if you don't add this to a handle then be careful because this deals with memory management and memory leaks so its safe to just always add it to a handle at some point in the frame!
+	// Handle在销毁时会自动清理并删除TargetData
+	// 如果没有把TargetData添加到Handle中，请小心，因为涉及内存管理和内存泄漏
 	FGameplayAbilityTargetData_CustomData* MyCustomData = new FGameplayAbilityTargetData_CustomData();
-	// Setup the struct's information to use the inputted name and any other changes we may want to do
 	MyCustomData->CoolName = CustomName;
 
-	// Make our handle wrapper for Blueprint usage
 	FGameplayAbilityTargetDataHandle Handle;
-	// Add the target data to our handle
 	Handle.Add(MyCustomData);
-	// Output our handle to Blueprint
 	return Handle;
 }
 ```
-For getting values it requires doing type safety checking, because the only way to get values from the handle's target data is by using generic C/C++ casting for it which is *NOT* type safe which can cause object slicing and crashes. For type checking there are multiple ways of doing this(however you want honestly) two common ways are:
-- Gameplay Tag(s): You can use a subclass hierarchy where you know that anytime a certain code architecture's functionality occurs, you can cast for the base parent type and get its gameplay tag(s) and then compare against those for casting for inherited classes.
-- Script Struct & Static Structs: You can instead do direct class comparison(which can involve a lot of IF statements or making some template functions), below is an example of doing this but basically you can get the script struct from any `FGameplayAbilityTargetData`(this is a nice advantage of it being a `USTRUCT` and requiring any inherited classes to specify the struct type in `GetScriptStruct`) and compare if its the type you're looking for. Below is an example of using these functions for type checking:
+为取值它需要类型安全检查，因为唯一从`TargetData`取值的途径是使用C++类型转换，这无法保证类型的安全性，会导致对象切割和崩溃。有多种方法可以执行类型安全检查，以下是两种常用方法：
+- GameplayTag：你可以在某个代码架构功能发生时使用子类层次结构，您可以对基本父类型进行转换并获取其`GameplayTag`，然后与继承类的转换进行比较。
+- `ScriptStruct`或静态结构体：你可以进行直接的类型比较（可能涉及很多IF语句或者制作模板函数），下面是例子，你可以从`FGameplayAbilityTargetData`获得`ScriptStruct`（这是它的优势，因为它是一个`USTRUCT`，并且要求任何继承的类在`GetScriptStruct`中指明结构类型）然后比较是否是你想要的类型：
 ```c++
 UFUNCTION(BlueprintPure)
 FName GetCoolNameFromTargetData(const FGameplayAbilityTargetDataHandle& Handle, const int Index)
 {   
-	// NOTE, there is two versions of this '::Get(int32 Index)' function; 
-	// 1) const version that returns 'const FGameplayAbilityTargetData*', good for reading target data values 
-	// 2) non-const version that returns 'FGameplayAbilityTargetData*', good for modifying target data values
-	FGameplayAbilityTargetData* Data = Handle.Get(Index); // This will valid check the index for you 
+	// 注意，这个Get方法有两个版本：
+	// 1) const版本返回'const FGameplayAbilityTargetData*'，适合读取TargetData的数据
+	// 2) 非const版本返回'FGameplayAbilityTargetData*'适合修改TargetData的数据
+	FGameplayAbilityTargetData* Data = Handle.Get(Index); // 这里会验证Index的有效性
     
-	// Valid check we have something to use, null data means nothing to cast for
+	// 非空说明含有我们想要的数据
 	if(Data == nullptr)
 	{
 		return NAME_None;
 	}
-	// This is basically the type checking pass, static_cast does not have type safety, this is why we do this check.
-	// If we don't do this then it will object slice the struct and thus we have no way of making sure its that type.
+	// 这是基础的验证类型的步骤，static_cast无法保证转换的安全性
+	// 如果我们不这样做，那么它将对结构进行对象切割，这样的话我们无法确保它是该类型
 	if(Data->GetScriptStruct() == FGameplayAbilityTargetData_CustomData::StaticStruct())
 	{
-		// Here is when you would do the cast because we know its the correct type already
+		// Cast在这里做，因为我们确信类型是正确的
 		FGameplayAbilityTargetData_CustomData* CustomData = static_cast<FGameplayAbilityTargetData_CustomData*>(Data);    
 		return CustomData->CoolName;
 	}
