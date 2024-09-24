@@ -2013,7 +2013,7 @@ bool TryActivateAbility(FGameplayAbilitySpecHandle AbilityToActivate, bool bAllo
 
 bool TriggerAbilityFromGameplayEvent(FGameplayAbilitySpecHandle AbilityToTrigger, FGameplayAbilityActorInfo* ActorInfo, FGameplayTag Tag, const FGameplayEventData* Payload, UAbilitySystemComponent& Component);
 
-FGameplayAbilitySpecHandle GiveAbilityAndActivateOnce(const FGameplayAbilitySpec& AbilitySpec);
+FGameplayAbilitySpecHandle GiveAbilityAndActivateOnce(const FGameplayAbilitySpec& AbilitySpec, const FGameplayEventData* GameplayEventData);
 ```
 
 想要通过Event激活`GameplayAbility`, `GameplayAbility`必须设置它的`Trigger`, 分配一个`GameplayTag`并为`GameplayEvent`选择一个选项. 想要发送Event, 就得使用`UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(AActor* Actor, FGameplayTag EventTag, FGameplayEventData Payload)`函数. 通过Event激活`GameplayAbility`允许你传递一个数据负载(Payload).  
@@ -3267,7 +3267,7 @@ ActiveGameplayEffects.MarkItemDirty(*AGE);
 ```
 
 发生的原因是`WITH_PUSH_MODEL`在多个地方定义。`PushModelMacros.h`将它定义为0，但很多地方将它定义为1。`PushModel.h`将它视为1但`PushModel.cpp`将它视为0。  
-解决方法是将`NetCore`加到你项目的`PublicDependencyModuleNames`。
+解决方法是将`NetCore`加到你项目的`PublicDependencyModuleNames`中。
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -3293,18 +3293,13 @@ ActiveGameplayEffects.MarkItemDirty(*AGE);
 <a name="resources"></a>
 # 11. 其他资源
 
-[官方文档](https://docs.unrealengine.com/en-US/InteractiveExperiences/GameplayAbilitySystem/index.html)  
-
-源代码! 特别是`GameplayPrediction.h`.  
-
-[Epic的Action RPG样例项目](https://www.unrealengine.com/marketplace/en-US/product/action-rpg)  
-
-[来自Epic的Dave Ratti回复社区关于GAS的问题](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89)  
-
-[Unreal Slackers Discord](https://unrealslackers.org)有一个专注于GAS`#gameplay-abilities-plugin`的文字频道  
-
-[Dan 'Pan'的Github库](https://github.com/Pantong51/GASContent)  
-
-[SabreDartStudios的YouTube视频](https://www.youtube.com/channel/UCCFUhQ6xQyjXDZ_d6X_H_-A)
+*[官方文档](https://docs.unrealengine.com/en-US/InteractiveExperiences/GameplayAbilitySystem/index.html)  
+*源代码! 特别是`GameplayPrediction.h`.  
+*[Epic的Lyra样例项目](https://unrealengine.com/marketplace/en-US/learn/lyra)
+*[Epic的Action RPG样例项目](https://www.unrealengine.com/marketplace/en-US/product/action-rpg)  
+*[来自Epic的Dave Ratti回复社区关于GAS的问题](https://epicgames.ent.box.com/s/m1egifkxv3he3u3xezb9hzbgroxyhx89)  
+*[Unreal Slackers Discord](https://unrealslackers.org)有一个专注于GAS`#gameplay-abilities-plugin`的文字频道  
+*[Dan 'Pan'的Github库](https://github.com/Pantong51/GASContent)  
+*[SabreDartStudios的YouTube视频](https://www.youtube.com/channel/UCCFUhQ6xQyjXDZ_d6X_H_-A)
 
 **[⬆ 返回目录](#table-of-contents)**
