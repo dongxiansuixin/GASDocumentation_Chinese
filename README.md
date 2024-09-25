@@ -5,7 +5,7 @@
 注意事项：
 1. 由于新的译者水平十分有限，翻译水平不如机翻也是有可能的，介意者请立即关闭该网页；
 2. 针对翻译出现的谬误，欢迎提issue，但不接受PR。若有无关issue会立即关闭；
-3. 本文将去掉“GAS Changelog”一节，需要的话请自行前往英文原版进行查询。
+3. 本文将去掉“GAS Changelog”和“Q&A With Epic Game's Dave Ratti”这两节，需要的话请自行前往英文原版进行查阅。
 
 # GASDocumentation
 
@@ -2225,11 +2225,11 @@ UAbilitySystemComponent::GetActivatableGameplayAbilitySpecsByAllMatchingTags(con
 <a name="concepts-ga-spec"></a>
 #### 4.6.10 Gameplay Ability Spec
 
-`GameplayAbilitySpec`会在`GameplayAbility`授予后存在于`ASC`中并定义可激活`GameplayAbility` - `GameplayAbility`类, 等级, 输入绑定和必须与`GameplayAbility`类分开保存的运行时状态.  
+`GameplayAbilitySpec`会在`GameplayAbility`授予后，存在于`ASC`中，并定义可激活`GameplayAbility`——`GameplayAbility`类, 等级, 输入绑定，以及必须与`GameplayAbility`类分开保存的运行时状态.  
 
-当`GameplayAbility`在服务端授予时, 服务端会同步`GameplayAbilitySpec`到所属(Owning)客户端, 因此可以激活它.  
+当`GameplayAbility`在服务端授予时, 服务端会同步`GameplayAbilitySpec`到所属客户端, 方便其激活.  
 
-激活`GameplayAbilitySpec`会根据它的`实例化策略(Instancing Policy)`创建一个`GameplayAbility`实例(`Non-Instanced GameplayAbility`除外).  
+激活`GameplayAbilitySpec`会根据它的实例化策略(Instancing Policy)创建一个`GameplayAbility`实例(`Non-Instanced GameplayAbility`除外).  
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -2625,8 +2625,6 @@ virtual bool ShouldAsyncLoadRuntimeObjectLibraries() const override
 3. 客户端接收自定义结构体并将其解包进客户端执行的`GameplayCue`.
 
 该方法也可以在你的`GameplayCue`需要特别指定的参数时使用, 这些需要特别指定的参数不能由`GameplayCueParameter`提供, 并且你不想将它们添加到`EffectContext`, 像伤害数值, 暴击标识, 破盾标识, 处决标识等等.  
-
-[https://forums.unrealengine.com/development-discussion/c-gameplay-programming/1711546-fscopedgameplaycuesendcontext-gameplaycuemanager](https://forums.unrealengine.com/development-discussion/c-gameplay-programming/1711546-fscopedgameplaycuesendcontext-gameplaycuemanager)  
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -3340,7 +3338,7 @@ Fortnite大逃杀(Fortnite Battle Royale)世界中有很多可损坏的`AActor`(
 <a name="troubleshooting-duplicatingblueprintactors"></a>
 ## 9.4 复制的蓝图Actor会将AttributeSet设置为nullptr
 
-这是一个[虚幻引擎的bug](https://issues.unrealengine.com/issue/UE-81109), 当使用从一个存在的蓝图Actor类复制的方式来创建新的类, 这会让这个Actor类中的AttributeSet指针被置为空指针。  
+这是一个[虚幻引擎的bug](https://issues.unrealengine.com/issue/UE-81109)（*译者注：Won't Fix，各位可以不用期待了*）, 当使用从一个存在的蓝图Actor类复制的方式来创建新的类, 这会让这个Actor类中的AttributeSet指针被置为空指针。  
 对此有一些变通的方法, 我已经成功地不在我的类内创建定制的`AttributeSet`指针(头文件中没有指针, 也不在构造函数中调用`CreateDefaultSubobject`), 
 而是直接在PostInitializeComponents()中向`ASC`添加`AttributeSets`(样本项目中没有显示).  
 复制的AttributeSets将仍然存在于`ASC`的`SpawnedAttributes`数组中. 它看起来像这样:  
