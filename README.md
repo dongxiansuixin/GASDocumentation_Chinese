@@ -37,7 +37,7 @@
 		- [4.3 Attribute](#43-attribute)
 			- [4.3.1 Attribute定义](#431-attribute定义)
 			- [4.3.2 BaseValue vs. CurrentValue](#432-basevalue-vs-currentvalue)
-			- [4.3.3 元(Meta)Attribute](#433-元metaattribute)
+			- [4.3.3 元Attribute](#433-元attribute)
 			- [4.3.4 响应Attribute变化](#434-响应attribute变化)
 			- [4.3.5 自动推导Attribute](#435-自动推导attribute)
 		- [4.4 AttributeSet](#44-attributeset)
@@ -178,10 +178,10 @@
 <a name="intro"></a>
 ## 1. 步入GameplayAbilitySystem插件
 
-摘自[官方文档](https://docs.unrealengine.com/en-US/Gameplay/GameplayAbilitySystem/index.html):  
-> Gameplay技能系统 是一个高度灵活的框架，可用于构建你可能会在RPG或MOBA游戏中看到的技能和属性类型。你可以构建可供游戏中的角色使用的动作或被动技能，使这些动作导致各种属性累积或损耗的状态效果，实现约束这些动作使用的"冷却"计时器或资源消耗，更改技能等级及每个技能等级的技能效果，激活粒子或音效，等等。简单来说，此系统可帮助你在任何现代RPG或MOBA游戏中设计、实现及高效关联各种游戏中的技能，既包括跳跃等简单技能，也包括你喜欢的角色的复杂技能集。
+摘自[官方文档](https://docs.unrealengine.com/en-US/Gameplay/GameplayAbilitySystem/index.html)（*译者注：已替换为最新版本的官方翻译*）:  
+> Gameplay技能系统（Gameplay Ability System）是一种框架，用于编译Actor可以拥有和触发的属性、技能和交互。该系统可适应各种各样的Gameplay驱动型项目，例如角色扮演游戏（RPG）、动作冒险（Action-Adventure）游戏和多玩家在线战术竞技游戏（MOBA）。
  
-GameplayAbilitySystem插件由Epic Games开发, 随Unreal Engine 4 (UE4)发布. 它已经由3A商业游戏的严格测试, 例如帕拉贡(Paragon)和堡垒之夜(Fortnite)等等.  
+GameplayAbilitySystem插件由Epic Games开发, 随Unreal Engine 4 (UE4)发布. 它已经受诸如帕拉贡(Paragon)和堡垒之夜(Fortnite)等3A商业游戏的严格测试.  
 
 该插件对于单人和多人游戏提供了开箱即用的解决方案:  
 
@@ -205,7 +205,7 @@ GameplayAbilitySystem插件由Epic Games开发, 随Unreal Engine 4 (UE4)发布. 
 
 GAS中的现存问题:
 
-* `GameplayEffect`延迟调节(Latency Reconciliation).(不能预测能力冷却时间, 导致高延迟玩家相比低延迟玩家, 对于短冷却时间的能力有更低的激活速率.)
+* `GameplayEffect`延迟调节(Latency Reconciliation)(不能预测能力冷却时间, 导致高延迟玩家相比低延迟玩家, 对于短冷却时间的能力有更低的激活速率)
 * 不能预测性地移除`GameplayEffect`. 然而我们可以反向预测性地添加`GameplayEffect`, 从而高效的移除它. 但是这不总是合适或者可行的, 因此这仍然是个问题.
 * 缺乏样例模板项目, 多人联机样例和文档. 希望这篇文档会有所帮助.
 
@@ -518,18 +518,18 @@ void FCommonConversationRuntimeModule::StartupModule()
 
 初识GAS的新手经常将`BaseValue`误认为`Attribute`的最大值并以这样的认识去编程, 这是错误的, 可以修改或引用的Ability/UI中的`Attribute`最大值应该是另外单独的`Attribute`. 对于硬编码的最大值和最小值, 有一种方法是使用可以设置最大值和最小值的`FAttributeMetaData`定义一个DataTable, 但是Epic在该结构体上的注释称之为"work in progress", 详见`AttributeSet.h`. 为了避免这种疑惑, 我建议引用在Ability或UI中的最大值应该单独定义`Attribute`, 只用于限制(Clamp)`Attribute`大小的硬编码最大值和最小值应该在`AttributeSet`中定义为硬编码浮点值. 关于限制(Clamp)`Attribute`值的问题在[PreAttributeChange()](#concepts-as-preattributechange)中讨论了CurrentValue的修改, 在[PostGameplayEffectExecute()](#concepts-as-postgameplayeffectexecute)中讨论了`GameplayEffect`对`BaseValue`的修改.  
 
-`即刻(Instant)GameplayEffect`可以永久性的修改`BaseValue`, 而`持续(Duration)`和`无限(Infinite)GameplayEffect`可以修改CurrentValue. 周期性(Periodic)`GameplayEffect`被视为`即刻(Instant)GameplayEffect`并且可以修改`BaseValue`.  
+即刻(Instant)`GameplayEffect`可以永久性的修改`BaseValue`, 而持续(Duration)和无限(Infinite)`GameplayEffect`可以修改`CurrentValue`. 周期性(Periodic)`GameplayEffect`被视为即刻(Instant)`GameplayEffect`并且可以修改`BaseValue`.  
 
 **[⬆ 返回目录](#table-of-contents)**
 
 <a name="concepts-a-meta"></a>
-#### 4.3.3 元(Meta)Attribute
+#### 4.3.3 元Attribute
 
-一些`Attribute`被视为占位符, 其是用于预计和`Attribute`交互的临时值, 这些`Attribute`被叫做`Meta Attribute`. 例如, 我们通常定义伤害值为`Meta Attribute`, 使用伤害值`Meta Attribute`作为占位符, 而不是使用`GameplayEffect`直接修改生命值`Attribute`, 使用这种方法, 伤害值就可以在[GameplayEffectExecutionCalculation](#concepts-ge-ec)中由buff和debuff修改, 并且可以在`AttributeSet`中进一步操作, 例如, 在最终将生命值减去伤害值之前, 要将伤害值减去当前的护盾值. 伤害值`Meta Attribute`在`GameplayEffect`之间不是持久化的, 并且可以被任何一方重写. `Meta Attribute`一般是不可同步的.  
+一些`Attribute`被视为占位符, 其是用于预计和`Attribute`交互的临时值, 这些`Attribute`被叫做元(meta)`Attribute`. 例如, 我们通常定义伤害值为元`Attribute`, 使用伤害值元`Attribute`作为占位符, 而不是使用`GameplayEffect`直接修改生命值`Attribute`, 使用这种方法, 伤害值就可以在[GameplayEffectExecutionCalculation](#concepts-ge-ec)中由buff和debuff修改, 并且可以在`AttributeSet`中进一步操作, 例如, 在最终将生命值减去伤害值之前, 要将伤害值减去当前的护盾值. 伤害值元`Attribute`在`GameplayEffect`之间不是持久化的, 并且可以被任何一方重写. 元`Attribute`一般是不可同步的.  
 
-`Meta Attribute`对于在"我们应该造成多少伤害?"和"我们该如何处理伤害值?"这种问题之中的伤害值和治疗值做了很好的解构, 这种解构意味着`GameplayEffect`和`ExecutionCalculation`无需了解目标是如何处理伤害值的. 继续看伤害值的例子, `GameplayEffect`确定造成多少伤害, 之后`AttributeSet`决定如何使用该伤害值, 不是所有的Character都有相同的`Attribute`, 特别是使用了`AttributeSet`子类的话, `AttributeSet`基类可能只有一个生命值`Attribute`, 但是它的子类可能增加了一个护盾值`Attribute`, 拥有护盾值`Attribute`的子类`AttributeSet`可能会以不同于`AttributeSet`基类的方式分配收到的伤害.  
+元`Attribute`对于在"我们应该造成多少伤害?"和"我们该如何处理伤害值?"这种问题之中的伤害值和治疗值做了很好的解构, 这种解构意味着`GameplayEffect`和`ExecutionCalculation`无需了解目标是如何处理伤害值的. 继续看伤害值的例子, `GameplayEffect`确定造成多少伤害, 之后`AttributeSet`决定如何使用该伤害值, 不是所有的Character都有相同的`Attribute`, 特别是使用了`AttributeSet`子类的话, `AttributeSet`基类可能只有一个生命值`Attribute`, 但是它的子类可能增加了一个护盾值`Attribute`, 拥有护盾值`Attribute`的子类`AttributeSet`可能会以不同于`AttributeSet`基类的方式分配收到的伤害.  
 
-尽管`Meta Attribute`是一个很好的设计模式, 但其并不是强制使用的. 如果你只有一个用于所有伤害实例的`Execution Calculation`和一个所有Character共用的`AttributeSet`类, 那么你就可以在`Exeuction Calculation`中分配伤害到生命, 护盾等等, 并直接修改那些`Attribute`, 这种方式你只会丢失灵活性, 但总体上并无大碍.  
+尽管元`Attribute`是一个很好的设计模式, 但其并不是强制使用的. 如果你只有一个用于所有伤害实例的`Execution Calculation`和一个所有Character共用的`AttributeSet`类, 那么你就可以在`Exeuction Calculation`中分配伤害到生命, 护盾等等, 并直接修改那些`Attribute`, 这种方式你只会丢失灵活性, 但总体上并无大碍.  
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -555,7 +555,7 @@ virtual void HealthChanged(const FOnAttributeChangeData& Data);
 <a name="concepts-a-derived"></a>
 #### 4.3.5 自动推导Attribute
 
-为了使一个`Attribute`的部分或全部值继承自一个或更多`Attribute`, 可以使用基于一个或多个`Attribute`或[MMC](#concepts-ge-mmc) [Modifiers](#concepts-ge-mods)的`无限(Infinite)GameplayEffect`. 当自动推导`Attribute`依赖的某个`Attribute`更新时它也会自动更新.  
+为了使一个`Attribute`的部分或全部值继承自一个或更多`Attribute`, 可以使用基于一个或多个`Attribute`或[MMC](#concepts-ge-mmc) [Modifiers](#concepts-ge-mods)的无限(Infinite)`GameplayEffect`. 当自动推导`Attribute`依赖的某个`Attribute`更新时它也会自动更新.  
 
 在自动推导`Attribute`上的所有`Modifier`形成的最终公式和`Modifier Aggregators`的公式是一样的. 如果你需要计算式要按一定的顺序进行, 在`MMC`中做就是了.  
 
@@ -565,7 +565,7 @@ virtual void HealthChanged(const FOnAttributeChangeData& Data);
 
 **Note**: 如果在PIE中打开多个窗口, 你需要在编辑器首选项中禁用`Run Under One Process`, 否则当自动推导`Attribute`所依赖的`Attribute`更新时, 除了第一个窗口外其不会更新.  
 
-在这个例子中, 我们有一个`无限(Infinite)GameplayEffect`, 其从TestAttrB和TestAttrC `Attribute`以`TestAttrA = (TestAttrA + TestAttrB) * ( 2 * TestAttrC)`公式继承得到TestAttrA, 每次TestAttrB和TestAttrC更新时, TestAttrA都会自动重新计算.  
+在这个例子中, 我们有一个无限(Infinite)`GameplayEffect`, 其从TestAttrB和TestAttrC `Attribute`以`TestAttrA = (TestAttrA + TestAttrB) * ( 2 * TestAttrC)`公式继承得到TestAttrA, 每次TestAttrB和TestAttrC更新时, TestAttrA都会自动重新计算.  
 
 ![Derived Attribute Example](Images/derivedattribute.png)  
 
@@ -777,9 +777,9 @@ void UGDAttributeSetBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 <a name="concepts-as-init"></a>
 #### 4.4.4 初始化Attribute
 
-有多种方法可以初始化`Attribute`(将BaseValue和CurrentValue设置为某初始值). Epic建议使用`即刻(Instant)GameplayEffect`, 这也是样例项目使用的方法.  
+有多种方法可以初始化`Attribute`(将BaseValue和CurrentValue设置为某初始值). Epic建议使用即刻(Instant)`GameplayEffect`, 这也是样例项目使用的方法.  
 
-查看样例项目的GE_HeroAttribute蓝图来了解如何创建`即刻(Instant)GameplayEffect`以初始化`Attribute`, 该`GameplayEffect`应用是写在C++中的.  
+查看样例项目的GE_HeroAttribute蓝图来了解如何创建即刻(Instant)`GameplayEffect`以初始化`Attribute`, 该`GameplayEffect`应用是写在C++中的.  
 
 如果在定义`Attribute`时使用了ATTRIBUTE_ACCESSORS宏, 那么在`AttributeSet`中会自动为每个`Attribute`生成一个初始化函数.  
 
@@ -819,11 +819,11 @@ if (Attribute == GetMoveSpeedAttribute())
 <a name="concepts-as-postgameplayeffectexecute"></a>
 #### 4.4.6 PostGameplayEffectExecute()
 
-`PostGameplayEffectExecute(const FGameplayEffectModCallbackData & Data)`仅在`即刻(Instant)GameplayEffect`对`Attribute`的BaseValue修改之后触发, 当[GameplayEffect](#concepts-ge)对其修改时, 这就是一个处理更多`Attribute`操作的有效位置.  
+`PostGameplayEffectExecute(const FGameplayEffectModCallbackData & Data)`仅在即刻(Instant)`GameplayEffect`对`Attribute`的BaseValue修改之后触发, 当[GameplayEffect](#concepts-ge)对其修改时, 这就是一个处理更多`Attribute`操作的有效位置.  
 
-例如, 在样例项目中, 我们在这里从生命值`Attribute`中减去了最终的伤害值`Meta Attribute`, 如果有护盾值`Attribute`的话, 我们也会在减除生命值之前从护盾值中减除伤害值. 样例项目也在这里应用了被击打反应动画, 显示浮动的伤害数值和为击杀者分配经验值和赏金. 通过设计, 伤害值`Meta Attribute`总是会传递给`即刻(Instant)GameplayEffect`而不是Attribute Setter.  
+例如, 在样例项目中, 我们在这里从生命值`Attribute`中减去了最终的伤害值`Meta Attribute`, 如果有护盾值`Attribute`的话, 我们也会在减除生命值之前从护盾值中减除伤害值. 样例项目也在这里应用了被击打反应动画, 显示浮动的伤害数值和为击杀者分配经验值和赏金. 通过设计, 伤害值`Meta Attribute`总是会传递给即刻(Instant)`GameplayEffect`而不是Attribute Setter.  
 
-其他只会由`即刻(Instant)GameplayEffect`修改BaseValue的`Attribute`, 像魔法值和耐力值, 也可以在这里被限制为其相应的最大值`Attribute`.  
+其他只会由即刻(Instant)`GameplayEffect`修改BaseValue的`Attribute`, 像魔法值和耐力值, 也可以在这里被限制为其相应的最大值`Attribute`.  
 
 **Note**: 当PostGameplayEffectExecute()被调用时, 对`Attribute`的修改已经发生, 但是还没有被同步回客户端, 因此在这里限制值不会造成对客户端的二次同步, 客户端只会接收到限制后的值.  
 
@@ -869,9 +869,9 @@ void UGDAttributeSetBase::OnAttributeAggregatorCreated(const FGameplayAttribute&
 
 `GameplayEffect`通过[Modifier](#concepts-ge-mods)和[Execution(GameplayEffectExecutionCalculation)](#concepts-ge-ec)修改`Attribute`.  
 
-`GameplayEffect`有三种持续类型: `即刻(Instant)`, `持续(Duration)`和`无限(Infinite)`.  
+`GameplayEffect`有三种持续类型: 即刻(Instant), 持续(Duration)和无限(Infinite).  
 
-额外地, `GameplayEffect`可以添加/执行[GameplayCue](#concepts-gc), `即刻(Instant)GameplayEffect`可以调用`GameplayCue GameplayTag`的Execute而`持续(Duration)`或`无限(Infinite)`可以调用`GameplayCue GameplayTag`的Add和Remove.  
+额外地, `GameplayEffect`可以添加/执行[GameplayCue](#concepts-gc), 即刻(Instant)`GameplayEffect`可以调用`GameplayCue GameplayTag`的Execute, 而持续(Duration)或无限(Infinite)可以调用`GameplayCue GameplayTag`的Add和Remove.  
 
 |类型|GameplayCue事件|何时使用|
 |:-:|:-:|:-:|
@@ -879,11 +879,11 @@ void UGDAttributeSetBase::OnAttributeAggregatorCreated(const FGameplayAttribute&
 |持续(Duration)|Add & Remove|对`Attribute`中CurrentValue的临时修改和当`GameplayEffect`过期或手动移除时, 应用将要被移除的`GameplayTag`. 持续时间是在UGameplayEffect类/蓝图中明确的.|
 |无限(Infinite)|Add & Remove|对`Attribute`中CurrentValue的临时修改和当`GameplayEffect`移除时, 应用将要被移除的`GameplayTag`. 该类型自身永不过期且必须由某个Ability或`ASC`手动移除.|
 
-`持续(Duration)`和`无限(Infinite)GameplayEffect`可以选择应用周期性的Effect, 其每过X秒(由周期定义)就应用一次`Modifier`和Execution, 当周期性的Effect修改`Attribute`的BaseValue和执行`GameplayCue`时就被视为`即刻(Instant)GameplayEffect`, 这种类型的Effect对于像随时间推移的持续伤害(damage over time, DOT)很有用. **Note**: 周期性的Effect不能被[预测](#concepts-p).  
+持续(Duration)和无限(Infinite)`GameplayEffect`可以选择应用周期性的Effect, 其每过X秒(由周期定义)就应用一次`Modifier`和Execution, 当周期性的Effect修改`Attribute`的BaseValue和执行`GameplayCue`时就被视为即刻(Instant)`GameplayEffect`, 这种类型的Effect对于像随时间推移的持续伤害(damage over time, DOT)很有用. **Note**: 周期性的Effect不能被[预测](#concepts-p).  
 
-如果`持续(Duration)`和`无限(Infinite)GameplayEffect`的Ongoing Tag Requirements未满足/满足的话([Gameplay Effect Tags](#concepts-ge-tags)), 那么它们在应用后就可以被暂时的关闭和打开, 关闭`GameplayEffect`会移除其`Modifier`和已应用`GameplayTag`效果, 但是不会移除该`GameplayEffect`, 重新打开`GameplayEffect`会重新应用其`Modifier`和`GameplayTag`.  
+如果持续(Duration)和无限(Infinite)`GameplayEffect`的Ongoing Tag Requirements未满足/满足的话([Gameplay Effect Tags](#concepts-ge-tags)), 那么它们在应用后就可以被暂时的关闭和打开, 关闭`GameplayEffect`会移除其`Modifier`和已应用`GameplayTag`效果, 但是不会移除该`GameplayEffect`, 重新打开`GameplayEffect`会重新应用其`Modifier`和`GameplayTag`.  
 
-如果你需要手动重新计算某个`持续(Duration)`或`无限(Infinite)GameplayEffect`的`Modifier`(假设有一个使用非`Attribute`数据的`MMC`), 可以使用和`UAbilitySystemComponent::ActiveGameplayEffect.GetActiveGameplayEffect(ActiveHandle).Spec.GetLevel()`相同的Level调用`UAbilitySystemComponent::ActiveGameplayEffect.SetActiveGameplayEffectLevel(FActiveGameplayEffectHandle ActiveHandle, int32 NewLevel)`. 当`Backing Attribute`更新时, 基于`Backing Attribute`的`Modifier`会自动更新. SetActiveGameplayEffectLevel()更新`Modifier`的关键函数是:  
+如果你需要手动重新计算某个持续(Duration)或无限(Infinite)`GameplayEffect`的`Modifier`(假设有一个使用非`Attribute`数据的`MMC`), 可以使用和`UAbilitySystemComponent::ActiveGameplayEffect.GetActiveGameplayEffect(ActiveHandle).Spec.GetLevel()`相同的Level调用`UAbilitySystemComponent::ActiveGameplayEffect.SetActiveGameplayEffectLevel(FActiveGameplayEffectHandle ActiveHandle, int32 NewLevel)`. 当`Backing Attribute`更新时, 基于`Backing Attribute`的`Modifier`会自动更新. SetActiveGameplayEffectLevel()更新`Modifier`的关键函数是:  
 
 ```c++
 MarkItemDirty(Effect);
@@ -903,7 +903,7 @@ UpdateAllAggregatorModMagnitudes(Effect);
 
 为了在`GameplayAbility`之外应用`GameplayEffect`, 例如对于某个投掷物, 你就需要获取到目标的`ASC`并使用它的函数之一来`ApplyGameplayEffectToSelf`.  
 
-你可以绑定`持续(Duration)`或`无限(Infinite)GameplayEffect`的委托来监听其应用到`ASC`:  
+你可以绑定持续(Duration)或无限(Infinite)`GameplayEffect`的委托来监听其应用到`ASC`:  
 
 ```c++
 AbilitySystemComponent->OnActiveGameplayEffectAddedDelegateToSelf.AddUObject(this, &APACharacterBase::OnActiveGameplayEffectAddedCallback);
@@ -926,7 +926,7 @@ virtual void OnActiveGameplayEffectAddedCallback(UAbilitySystemComponent* Target
 
 为了在`GameplayAbility`之外移除`GameplayEffect`, 你就需要获取到该目标的`ASC`并使用它的函数之一来`RemoveActiveGameplayEffect`.  
 
-你可以绑定`持续(Duration)`或`无限(Infinite)GameplayEffect`的委托来监听其应用到`ASC`:  
+你可以绑定持续(Duration)或无限(Infinite)`GameplayEffect`的委托来监听其应用到`ASC`:  
 
 ```c++
 AbilitySystemComponent->OnAnyGameplayEffectRemovedDelegate().AddUObject(this, &APACharacterBase::OnRemoveGameplayEffectCallback);
@@ -1082,18 +1082,18 @@ float FAggregatorModChannel::MultiplyMods(const TArray<FAggregatorMod>& InMods, 
 <a name="concepts-ge-mods-gameplaytags"></a>
 ##### 4.5.4.2 Modifier的GameplayTag
 
-每个[Modifier](#concepts-ge-mods)都可以设置`SourceTag`和`TargetTag`, 它们的作用就像`GameplayEffect`的[Application Tag requirements](#concepts-ge-tags), 因此只有当Effect应用后才会考虑标签, 对于周期性(Periodic)的`无限(Infinite)`Effect, 这些标签只会在第一次应用Effect时才会被考虑, 而不是在每次周期执行时.  
+每个[Modifier](#concepts-ge-mods)都可以设置`SourceTag`和`TargetTag`, 它们的作用就像`GameplayEffect`的[Application Tag requirements](#concepts-ge-tags), 因此只有当Effect应用后才会考虑标签, 对于周期性(Periodic)的无限(Infinite)Effect, 这些标签只会在第一次应用Effect时才会被考虑, 而不是在每次周期执行时.  
 
 `Attribute Based Modifier`也可以设置`SourceTagFilter`和`TargetTagFilter`. 当确定`Attribute Based Modifier`的源(Source)`Attribute`的Magnitude时, 这些过滤器就会用来将某些`Modifier`排除在该Attribute之外, 源(Source)或目标(Target)中没有过滤器所有标签的`Modifier`也会被排除在外.  
 
-这更详尽的意思是: 源(Source)`ASC`和目标(Target)`ASC`的标签都被`GameplayEffect`所捕获, 当`GameplayEffectSpec`创建时, 源(Source)`ASC`的标签被捕获, 当执行Effect时, 目标(Target)`ASC`的标签被捕获. 当确定`无限(Infinite)`或`持续(Duration)`Effect的`Modifier`是否满足条件可以被应用(也就是聚合器条件(Aggregator Qualify))并且过滤器已经设置时, 被捕获的标签就会和过滤器进行比对.  
+这更详尽的意思是: 源(Source)`ASC`和目标(Target)`ASC`的标签都被`GameplayEffect`所捕获, 当`GameplayEffectSpec`创建时, 源(Source)`ASC`的标签被捕获, 当执行Effect时, 目标(Target)`ASC`的标签被捕获. 当确定无限(Infinite)或持续(Duration)Effect的`Modifier`是否满足条件可以被应用(也就是聚合器条件(Aggregator Qualify))并且过滤器已经设置时, 被捕获的标签就会和过滤器进行比对.  
 
 **[⬆ 返回目录](#table-of-contents)**
 
 <a name="concepts-ge-stacking"></a>
 #### 4.5.5 GameplayEffect堆栈
 
-`GameplayEffect`默认会应用新的`GameplayEffectSpec`实例, 而不明确或不关心之前已经应用过的尚且存在的`GameplayEffectSpec`实例. `GameplayEffect`可以设置到堆栈中, 新的`GameplayEffectSpec`实例不会添加到堆栈中, 而是修改当前已经存在的`GameplayEffectSpec`堆栈数. 堆栈只适用于`持续(Duration)`和`无限(Infinite)GameplayEffect`.  
+`GameplayEffect`默认会应用新的`GameplayEffectSpec`实例, 而不明确或不关心之前已经应用过的尚且存在的`GameplayEffectSpec`实例. `GameplayEffect`可以设置到堆栈中, 新的`GameplayEffectSpec`实例不会添加到堆栈中, 而是修改当前已经存在的`GameplayEffectSpec`堆栈数. 堆栈只适用于持续(Duration)和无限(Infinite)`GameplayEffect`.  
 
 有两种类型的堆栈: Aggregate by Source和Aggregate by Target.  
 
@@ -1113,7 +1113,7 @@ float FAggregatorModChannel::MultiplyMods(const TArray<FAggregatorMod>& InMods, 
 <a name="concepts-ge-ga"></a>
 #### 4.5.6 授予Ability
 
-`GameplayEffect`可以授予(Grant)新的[GameplayAbility](#concepts-ga)到`ASC`. 只有`持续(Duration)`和`无限(Infinite)GameplayEffect`可以授予Ability.  
+`GameplayEffect`可以授予(Grant)新的[GameplayAbility](#concepts-ga)到`ASC`. 只有持续(Duration)和无限(Infinite)`GameplayEffect`可以授予Ability.  
 
 一个普遍用法是当想要强制另一个玩家做某些事的时候, 像击退或拉取时移动他们, 就会对它们应用一个`GameplayEffect`来授予其一个自动激活的Ability(查看[被动Ability](#concepts-ga-activating-passive)来了解如何在Ability被授予时自动激活它), 从而使其做出相应的动作.  
 
@@ -1135,8 +1135,8 @@ float FAggregatorModChannel::MultiplyMods(const TArray<FAggregatorMod>& InMods, 
 |分类|描述|
 |:-:|:-:|
 |Gameplay Effect Asset Tags|`GameplayEffect`拥有的标签, 它们自身没有任何功能且只用于描述`GameplayEffect`.|
-|Granted Tags|存于`GameplayEffect`中且又用于`GameplayEffect`所应用`ASC`的标签. 当`GameplayEffect`移除时它们也会从`ASC`中移除. 该标签只作用于`持续(Duration)`和`无限(Infinite)GameplayEffect`.|
-|Ongoing Tag Requirements|一旦`GameplayEffect`应用后, 这些标签将决定`GameplayEffect`是开启还是关闭. `GameplayEffect`可以是关闭但仍然是应用的. 如果某个`GameplayEffect`由于不符合`Ongoing Tag Requirements`而关闭, 但是之后又满足需求了, 那么该`GameplayEffect`会重新打开并重新应用它的`Modifier`. 该标签只作用于`持续(Duration)`和`无限(Infinite)GameplayEffect`.|
+|Granted Tags|存于`GameplayEffect`中且又用于`GameplayEffect`所应用`ASC`的标签. 当`GameplayEffect`移除时它们也会从`ASC`中移除. 该标签只作用于持续(Duration)和无限(Infinite)`GameplayEffect`.|
+|Ongoing Tag Requirements|一旦`GameplayEffect`应用后, 这些标签将决定`GameplayEffect`是开启还是关闭. `GameplayEffect`可以是关闭但仍然是应用的. 如果某个`GameplayEffect`由于不符合`Ongoing Tag Requirements`而关闭, 但是之后又满足需求了, 那么该`GameplayEffect`会重新打开并重新应用它的`Modifier`. 该标签只作用于持续(Duration)和无限(Infinite)`GameplayEffect`.|
 |Application Tag Requirements|位于目标上决定某个`GameplayEffect`是否可以应用到该目标的标签, 如果不满足这些需求, 那么`GameplayEffect`就不可应用.|
 |Remove Gameplay Effects with Tags|当`GameplayEffect`成功应用后, 如果位于目标上的该`GameplayEffect`在其`Asset Tags`或`Granted Tags`中有任意一个本标签的话, 其就会自目标上移除.|
 
@@ -1240,9 +1240,9 @@ GASShooter使用了一个子结构体`GameplayEffectContext`来添加可以在`G
 
 [ModifierMagnitudeCalculations](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/UGameplayModMagnitudeCalculation/index.html)(`ModMagcCalc`或`MMC`)是在`GameplayEffect`中作为[Modifier](#concepts-ge-mods)使用的强有力的类, 它的功能类似[GameplayEffectExecutionCalculation](#concepts-ge-ec)但是要逊色一些, 最重要的是它是可预测的. 它唯一要做的就是自`CalculateBaseMagnitude_Implementation()`返回浮点值, 你可以在C++和蓝图中继承并重写该函数.  
 
-`MMC`可以用于各种持续时间的`GameplayEffect` - `即刻(Instant)`, `持续(Duration)`, `无限(Infinite)`和`周期性(Periodic)`.  
+`MMC`可以用于各种持续时间的`GameplayEffect` - 即刻(Instant), 持续(Duration), 无限(Infinite)和周期性(Periodic).  
 
-`MMC`的优势在于能够完全访问`GameplayEffectSpec`来读取`GameplayTag`和`SetByCaller`，从而能够捕获`GameplayEffect`的`源(Source)`或`目标(Target)`上任意数量的`Attribute`值. `Attribute`可以被Snapshot也可以不被Snapshot, `Snapshotted Attribute`在`GameplayEffectSpec`创建时被捕获而非`Snapshotted Attribute`在`GameplayEffectSpec`应用时被捕获并且该`Attribute`被`无限(Infinite)`或`持续(Duration)`GameplayEffect修改时会自动更新. 捕获`Attribute`会自`ASC`现有的`Modifier`重新计算它们的`CurrentValue`, 该重新计算**不会**执行`AbilitySet`中的[PreAttributeChange()](#concepts-as-preattributechange), 因此所有的限制操作(Clamp)必须在这里重新处理.  
+`MMC`的优势在于能够完全访问`GameplayEffectSpec`来读取`GameplayTag`和`SetByCaller`，从而能够捕获`GameplayEffect`的`源(Source)`或`目标(Target)`上任意数量的`Attribute`值. `Attribute`可以被Snapshot也可以不被Snapshot, `Snapshotted Attribute`在`GameplayEffectSpec`创建时被捕获而非`Snapshotted Attribute`在`GameplayEffectSpec`应用时被捕获并且该`Attribute`被无限(Infinite)或持续(Duration)GameplayEffect修改时会自动更新. 捕获`Attribute`会自`ASC`现有的`Modifier`重新计算它们的`CurrentValue`, 该重新计算**不会**执行`AbilitySet`中的[PreAttributeChange()](#concepts-as-preattributechange), 因此所有的限制操作(Clamp)必须在这里重新处理.  
 
 |Snapshot|源(Source)或目标(Target)|在GameplayEffectSpec中捕获|Attribute被无限(Infinite)或持续(Duration)GameplayEffect修改时自动更新|
 |:-:|:-:|:-:|:-:|
@@ -1317,7 +1317,7 @@ float UPAMMC_PoisonMana::CalculateBaseMagnitude_Implementation(const FGameplayEf
 
 [GameplayEffectExecutionCalculation](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/UGameplayEffectExecutionCalculat-/index.html)(ExecutionCalculation, Execution(你会在插件代码里经常看到这个词)或ExecCalc)是`GameplayEffect`对`ASC`进行修改最强有力的方式. 像[ModifierMagnitudeCalculation](#concepts-ge-mmc)一样, 它也可以捕获`Attribute`并选择性地为其创建Snapshot, 和`MMC`不同的是, 它可以修改多个`Attribute`并且基本上可以处理程序员想要做的任何事. 这种强有力和灵活性的负面就是它是不可[预测](#concepts-p)的且必须在C++中实现.  
 
-`ExecutionCalculation`只能由`即刻(Instant)`和`周期性(Periodic)`GameplayEffect使用, 插件中所有和"Execute"相关的一般都引用到这两种类型的`GameplayEffect`.  
+`ExecutionCalculation`只能由即刻(Instant)和周期性(Periodic)GameplayEffect使用, 插件中所有和"Execute"相关的一般都引用到这两种类型的`GameplayEffect`.  
 
 当`GameplayEffectSpec`创建时, Snapshot会捕获`Attribute`, 而当`GameplayEffectSpec`应用时, 非Snapshot会捕获`Attribute`. 捕获`Attribute`会自`ASC`现有的`Modifier`重新计算它们的`CurrentValue`, 该重新计算**不会**执行`AbilitySet`中的[PreAttributeChange()](#concepts-as-preattributechange), 因此所有的限制操作(Clamp)必须在这里重新处理.  
 
@@ -1443,7 +1443,7 @@ FGameplayEffectSpec* GetOwningSpecForPreExecuteMod() const;
 <a name="concepts-ge-cost"></a>
 #### 4.5.14 花费(Cost)GameplayEffect
 
-[GameplayAbility](#concepts-ga)有一个特别设计用来作为Ability花费(Cost)的可选`GameplayEffect`. 花费(Cost)是指`ASC`激活`GameplayAbility`所必需的`Attribute`量. 如果某个`GA`不能提供`Cost GE`, 那么它就不能被激活. 该`Cost GE`应该是某个带有一个或多个自`Attribute`中减值Modifier的`即刻(Instant)GameplayEffect`. 默认情况下, `Cost GE`是可以被预测的, 建议保留该功能, 也就是不要使用`ExecutionCalculations`, `MMC`对于复杂的花费计算是完美适配并且鼓励使用的.  
+[GameplayAbility](#concepts-ga)有一个特别设计用来作为Ability花费(Cost)的可选`GameplayEffect`. 花费(Cost)是指`ASC`激活`GameplayAbility`所必需的`Attribute`量. 如果某个`GA`不能提供`Cost GE`, 那么它就不能被激活. 该`Cost GE`应该是某个带有一个或多个自`Attribute`中减值Modifier的即刻(Instant)`GameplayEffect`. 默认情况下, `Cost GE`是可以被预测的, 建议保留该功能, 也就是不要使用`ExecutionCalculations`, `MMC`对于复杂的花费计算是完美适配并且鼓励使用的.  
 
 开始的时候, 你通常会为每个有花费的`GA`都设置一个独一无二的`Cost GE`, 一个更高阶的技巧是对多个`GA`复用一个`Cost GE`, 只需修改自`GA`的`Cost GE`创建的`GameplayEffectSpec`中指定的数据(花费值是在`GA`上定义的), **这只作用于`实例化(Instanced)`的Ability.**  
 
@@ -1676,7 +1676,7 @@ Epic希望在未来的[GAS迭代版本](#concepts-p-future)中实现真正的冷
 <a name="concepts-ge-duration"></a>
 #### 4.5.16 修改已激活GameplayEffect的持续时间
 
-为了修改`Cooldown GE`或其他任何`持续(Duration)`GameplayEffect的剩余时间, 我们需要修改`GameplayEffectSpec`的持续时间, 更新它的`StartServerWorldTime`, `CachedStartServerWorldTime`, `StartWorldTime`, 并且使用`CheckDuration()`重新检查持续时间. 在服务端上完成这些操作并将`FActiveGameplayEffect`标记为dirty, 其会将这些修改同步到客户端. **Note:** 该操作包含一个`const_cast`, 这可能不是`Epic`希望的修改持续时间的方法, 但是迄今为止它看起来运行得很好.  
+为了修改`Cooldown GE`或其他任何持续(Duration)GameplayEffect的剩余时间, 我们需要修改`GameplayEffectSpec`的持续时间, 更新它的`StartServerWorldTime`, `CachedStartServerWorldTime`, `StartWorldTime`, 并且使用`CheckDuration()`重新检查持续时间. 在服务端上完成这些操作并将`FActiveGameplayEffect`标记为dirty, 其会将这些修改同步到客户端. **Note:** 该操作包含一个`const_cast`, 这可能不是`Epic`希望的修改持续时间的方法, 但是迄今为止它看起来运行得很好.  
 
 ```c++
 bool UPAAbilitySystemComponent::SetGameplayEffectDurationHandle(FActiveGameplayEffectHandle Handle, float NewDuration)
@@ -1722,9 +1722,9 @@ bool UPAAbilitySystemComponent::SetGameplayEffectDurationHandle(FActiveGameplayE
 
 在运行时创建动态`GameplayEffect`是一个高阶技术, 你不必经常使用它.  
 
-只有`即刻(Instant)GameplayEffect`可以在运行时由C++创建, `持续(Duration)`和`无限(Infinite)`GameplayEffect不能在运行时动态创建, 因为它们在同步时会寻找并不存在的`GameplayEffect`类定义. 为了实现该功能, 你应该创建一个原型`GameplayEffect`类, 就像平时在编辑器中做的那样, 之后根据运行时所需来定制化`GameplayEffectSpec`.  
+只有即刻(Instant)`GameplayEffect`可以在运行时由C++创建, 持续(Duration)和无限(Infinite)GameplayEffect不能在运行时动态创建, 因为它们在同步时会寻找并不存在的`GameplayEffect`类定义. 为了实现该功能, 你应该创建一个原型`GameplayEffect`类, 就像平时在编辑器中做的那样, 之后根据运行时所需来定制化`GameplayEffectSpec`.  
 
-运行时创建的`即刻(Instant)GameplayEffect`也可以在客户端[预测](#concepts-p)的`GameplayAbility`中调用. 然而, 目前还不明确动态创建是否有副作用.  
+运行时创建的即刻(Instant)`GameplayEffect`也可以在客户端[预测](#concepts-p)的`GameplayAbility`中调用. 然而, 目前还不明确动态创建是否有副作用.  
 
 样例项目会在角色`AttributeSet`中的值受到致命一击时创建该`GameplayEffect`来将金币和经验点数返还给击杀者.  
 
@@ -2225,7 +2225,8 @@ UAbilitySystemComponent::GetActivatableGameplayAbilitySpecsByAllMatchingTags(con
 <a name="concepts-ga-spec"></a>
 #### 4.6.10 Gameplay Ability Spec
 
-`GameplayAbilitySpec`会在`GameplayAbility`授予后，存在于`ASC`中，并定义可激活`GameplayAbility`——`GameplayAbility`类, 等级, 输入绑定，以及必须与`GameplayAbility`类分开保存的运行时状态.  
+`GameplayAbilitySpec`会在`GameplayAbility`授予后，存放于`ASC`中。它定义`GameplayAbility`是什么（什么类、什么等级、输入绑定如何等等），同时持有必须放在`GameplayAbility`之外的运行时状态.
+（*译者注：原文这一句说实话虽然是根据UE官方说明转写而来，但还没它好懂，这里将后半句换成官方说明*）
 
 当`GameplayAbility`在服务端授予时, 服务端会同步`GameplayAbilitySpec`到所属客户端, 方便其激活.  
 
@@ -2250,7 +2251,7 @@ UAbilitySystemComponent::GetActivatableGameplayAbilitySpecsByAllMatchingTags(con
 <a name="concepts-ga-commit"></a>
 #### 4.6.12 Ability花费(Cost)和冷却(Cooldown)
 
-`GameplayAbility`默认带有对可选Cost和Cooldown的功能. Cost是`ASC`为了激活使用`即刻(Instant)GameplayEffect`([Cost GE](#concepts-ge-cost))实现的GameplayAbility所必须具有的预先定义的大量Attribute. Cooldown是用于阻止`GameplayAbility`再次激活(直到冷却完成)的计时器, 其由`持续(Duration)GameplayEffect`([Cooldown GE](#concepts-ge-cooldown))实现.  
+`GameplayAbility`默认带有对可选Cost和Cooldown的功能. Cost是`ASC`为了激活使用即刻(Instant)`GameplayEffect`([Cost GE](#concepts-ge-cost))实现的GameplayAbility所必须具有的预先定义的大量Attribute. Cooldown是用于阻止`GameplayAbility`再次激活(直到冷却完成)的计时器, 其由持续(Duration)`GameplayEffect`([Cooldown GE](#concepts-ge-cooldown))实现.  
 
 在`GameplayAbility`调用`UGameplayAbility::Activate()`之前, 其会调用`UGameplayAbility::CanActivateAbility()`, 该函数会检查所属`ASC`是否满足Cost(`UGameplayAbility::CheckCost()`)并确保该`GameplayAbility`不在冷却期(`UGameplayAbility::CheckCooldown()`).  
 
@@ -2445,7 +2446,7 @@ GAS自带的`AbilityTask`可以使用挂载在`CharacterMovementComponent`中的
 |GameplayCue类|事件|GameplayEffect类型|描述|
 |:-:|:-:|:-:|:-:|
 |[GameplayCueNotify_Static](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/UGameplayCueNotify_Static/index.html)|Execute|Instant或Periodic|`Static GameplayCueNotify`直接操作`ClassDefaultObject`(意味着没有实例)并且对于一次性效果(像击打伤害)是极好的.|
-|[GameplayCueNotify_Actor](https://docs.unrealengine.com/en-US/BlueprintAPI/GameplayCueNotify/index.html)|Add或Remove|Duration或Infinite|`Actor GameplayCueNotify`会在添加(Added)时生成一个新的实例, 因为其是实例化的, 所以可以随时间推移执行操作直到被移除(Removed). 这对循环的声音和粒子效果是很好的, 其会在`持续(Duration)`或`无限(Infinite)`GameplayEffect被移除或手动调用移除时移除. 其也自带选项来管理允许同时添加(Added)多少个, 因此多个相同效果的应用只启用一次声音或粒子效果.|
+|[GameplayCueNotify_Actor](https://docs.unrealengine.com/en-US/BlueprintAPI/GameplayCueNotify/index.html)|Add或Remove|Duration或Infinite|`Actor GameplayCueNotify`会在添加(Added)时生成一个新的实例, 因为其是实例化的, 所以可以随时间推移执行操作直到被移除(Removed). 这对循环的声音和粒子效果是很好的, 其会在持续(Duration)或无限(Infinite)GameplayEffect被移除或手动调用移除时移除. 其也自带选项来管理允许同时添加(Added)多少个, 因此多个相同效果的应用只启用一次声音或粒子效果.|
 
 `GameplayCueNotify`技术上可以响应任何事件, 但是这是我们一般使用它的方式.  
 
@@ -2735,7 +2736,7 @@ Epic的理念是只能预测"不受伤害(get away with)"的事情. 例如, Para
 
 关于预测伤害值, 我个人不建议使用, 尽管它是大多数刚接触GAS的人最先做的事情之一, 我特别不建议尝试预测死亡, 虽然你可以预测伤害值, 但是这样做很棘手. 如果你错误预测地应用了伤害, 那么玩家将会看到敌人的生命值会跳动, 如果你尝试预测死亡, 那么这将会是特别尴尬和令人沮丧的, 假设你错误预测了某个`Character`的死亡, 那么它就会开启布娃娃模拟, 只有当服务端纠正后才会停止布娃娃模拟并继续向你射击.
 
-**Note:** 修改`Attribute`的`即刻(Instant)GameplayEffect`(像`Cost GE`)在你自身可以无缝预测, 预测修改其他Character的`即刻(Instant)Attribute`会显示短暂的异常或者`Attribute`中的暂时性问题. 预测的`即刻(Instant)GameplayEffect`实际上被视为`无限(Infinite)GameplayEffect`, 因此如果错误预测的话还可以回滚. 当服务端的`GameplayEffect`被应用时, 其实是存在两个相同的`GameplayEffect`的, 会在短时间内造成`Modifier`应用两次或者不应用, 其最终会纠正自身, 但是有时候这个异常现象对玩家来说是显著的.  
+**Note:** 修改`Attribute`的即刻(Instant)`GameplayEffect`(像`Cost GE`)在你自身可以无缝预测, 预测修改其他Character的即刻(Instant)`Attribute`会显示短暂的异常或者`Attribute`中的暂时性问题. 预测的即刻(Instant)`GameplayEffect`实际上被视为无限(Infinite)`GameplayEffect`, 因此如果错误预测的话还可以回滚. 当服务端的`GameplayEffect`被应用时, 其实是存在两个相同的`GameplayEffect`的, 会在短时间内造成`Modifier`应用两次或者不应用, 其最终会纠正自身, 但是有时候这个异常现象对玩家来说是显著的.  
 
 GAS的预测实现尝试解决的问题:  
 
@@ -3069,7 +3070,7 @@ void SetReticleMaterialParamVector(FName ParamName, FVector value);
 <a name="cae-ls"></a>
 ### 5.4 生命偷取(Lifesteal)
 
-我在伤害[ExecutionCalculation](#concepts-ge-ec)中处理生命偷取. `GameplayEffect`会有一个像`Effect.CanLifesteal`样的`GameplayTag`, `ExecutionCalculation`会检查`GameplayEffectSpec`是否有`Effect.CanLifesteal GameplayTag`, 如果该`GameplayTag`存在, `ExecutionCalculation`会使用作为Modifer的生命值[创建一个动态的`即刻(Instant)GameplayEffect`](#concepts-ge-dynamic), 并将其应用回源(Source)ASC.  
+我在伤害[ExecutionCalculation](#concepts-ge-ec)中处理生命偷取. `GameplayEffect`会有一个像`Effect.CanLifesteal`样的`GameplayTag`, `ExecutionCalculation`会检查`GameplayEffectSpec`是否有`Effect.CanLifesteal GameplayTag`, 如果该`GameplayTag`存在, `ExecutionCalculation`会使用作为Modifer的生命值[创建一个动态的即刻(Instant)`GameplayEffect`](#concepts-ge-dynamic), 并将其应用回源(Source)ASC.  
 
 ```c++
 if (SpecAssetTags.HasTag(FGameplayTag::RequestGameplayTag(FName("Effect.Damage.CanLifesteal"))))
