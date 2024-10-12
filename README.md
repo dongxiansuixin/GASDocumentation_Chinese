@@ -61,7 +61,7 @@
 			- [4.5.4 GameplayEffectModifier](#454-gameplayeffectmodifier)
 				- [4.5.4.1 Multiply和Divide Modifier](#4541-multiply和divide-modifier)
 				- [4.5.4.2 Modifier的GameplayTag](#4542-modifier的gameplaytag)
-			- [4.5.5 GameplayEffect堆栈](#455-gameplayeffect堆栈)
+			- [4.5.5 GameplayEffect栈](#455-gameplayeffect栈)
 			- [4.5.6 授予Ability](#456-授予ability)
 			- [4.5.7 GameplayEffect标签](#457-gameplayeffect标签)
 			- [4.5.8 免疫](#458-免疫)
@@ -147,7 +147,7 @@
 		- [5.4 生命偷取(Lifesteal)](#54-生命偷取lifesteal)
 		- [5.5 在客户端和服务端中生成随机数](#55-在客户端和服务端中生成随机数)
 		- [5.6 暴击(Critical Hits)](#56-暴击critical-hits)
-		- [5.7 非堆栈GameplayEffect, 但是只有其最高级(Greatest Magnitude)才能实际影响Target](#57-非堆栈gameplayeffect-但是只有其最高级greatest-magnitude才能实际影响target)
+		- [5.7 非栈式GameplayEffect, 但是只有其最高级(Greatest Magnitude)才能实际影响Target](#57-非栈式gameplayeffect-但是只有其最高级greatest-magnitude才能实际影响target)
 		- [5.8 游戏暂停时生成`TargetData`](#58-游戏暂停时生成targetdata)
 		- [5.9 按钮交互系统(Button Interaction System)](#59-按钮交互系统button-interaction-system)
 	- [6. 调试GAS](#6-调试gas)
@@ -231,7 +231,7 @@ GAS中的现存问题:
 * 不断消耗耐力来奔跑.
 * 消耗魔法值来使用能力(Ability).
 * 被动能力(Ability).
-* 堆栈`GameplayEffect`.
+* 栈式`GameplayEffect`.
 * 锁定Actor.
 * 在蓝图中创建`GameplayAbility`.
 * 在C++中创建`GameplayAbility`.
@@ -1091,20 +1091,20 @@ float FAggregatorModChannel::MultiplyMods(const TArray<FAggregatorMod>& InMods, 
 **[⬆ 返回目录](#table-of-contents)**
 
 <a name="concepts-ge-stacking"></a>
-#### 4.5.5 GameplayEffect堆栈
+#### 4.5.5 GameplayEffect栈
 
-`GameplayEffect`默认会应用新的`GameplayEffectSpec`实例, 而不明确或不关心之前已经应用过的尚且存在的`GameplayEffectSpec`实例. `GameplayEffect`可以设置到堆栈中, 新的`GameplayEffectSpec`实例不会添加到堆栈中, 而是修改当前已经存在的`GameplayEffectSpec`堆栈数. 堆栈只适用于持续(Duration)和无限(Infinite)`GameplayEffect`.  
+`GameplayEffect`默认会应用新的`GameplayEffectSpec`实例, 而不明确或不关心之前已经应用过的尚且存在的`GameplayEffectSpec`实例. `GameplayEffect`可以设置到栈中, 新的`GameplayEffectSpec`实例不会添加到栈中, 而是修改当前已经存在的`GameplayEffectSpec`栈数. 栈只适用于持续(Duration)和无限(Infinite)`GameplayEffect`.  
 
-有两种类型的堆栈: Aggregate by Source和Aggregate by Target.  
+有两种类型的栈: Aggregate by Source和Aggregate by Target.  
 
-|堆栈类型|描述|
+|栈类型|描述|
 |:-:|:-:|
-|Aggregate by Source|目标(Target)上的每个源(Source)`ASC`都有一个单独的堆栈实例, 每个源(Source)可以应用堆栈中的X个`GameplayEffect`.|
-|Aggregate by Target|目标(Target)上只有一个堆栈实例而不管源(Source)如何, 每个源(Source)都可以在共享堆栈限制(Shared Stack Limit)内应用堆栈.|
+|Aggregate by Source|目标(Target)上的每个源(Source)`ASC`都有一个单独的栈实例, 每个源(Source)可以应用栈中的X个`GameplayEffect`.|
+|Aggregate by Target|目标(Target)上只有一个栈实例而不管源(Source)如何, 每个源(Source)都可以在共享栈限制(Shared Stack Limit)内应用栈.|
 
-堆栈对过期, 持续刷新和周期性刷新也有一些处理策略, 这些在`GameplayEffect`蓝图中都有很友好的悬浮提示帮助.  
+栈对过期, 持续刷新和周期性刷新也有一些处理策略, 这些在`GameplayEffect`蓝图中都有很友好的悬浮提示帮助.  
 
-样例项目包含一个用于监听`GameplayEffect`堆栈变化的自定义蓝图节点, HUD UMG Widget使用它来更新玩家拥有的被动护盾堆栈(层数). 该`AsyncTask`将会一直响应直到手动调用`EndTask()`, 就像在UMG Widget的`Destruct`事件中调用那样. 参阅`AsyncTaskAttributeChanged.h/cpp`.  
+样例项目包含一个用于监听`GameplayEffect`栈变化的自定义蓝图节点, HUD UMG Widget使用它来更新玩家拥有的被动护盾栈(层数). 该`AsyncTask`将会一直响应直到手动调用`EndTask()`, 就像在UMG Widget的`Destruct`事件中调用那样. 参阅`AsyncTaskAttributeChanged.h/cpp`.  
 
 ![Listen for GameplayEffect Stack Change BP Node](Images/gestackchange.png)
 
@@ -1168,7 +1168,7 @@ float FAggregatorModChannel::MultiplyMods(const TArray<FAggregatorMod>& InMods, 
 * 该`GameplayEffectSpec`的等级. 通常和创建`GameplayEffectSpec`的Ability的等级一样, 但是可以是不同的.
 * `GameplayEffectSpec`的持续时间. 默认是`GameplayEffect`的持续时间, 但是可以是不同的.
 * 对于周期性Effect中`GameplayEffectSpec`的周期, 默认是`GameplayEffect`的周期, 但是可以是不同的.
-* 该`GameplayEffectSpec`的当前堆栈数. 堆栈限制取决于`GameplayEffect`.
+* 该`GameplayEffectSpec`的当前栈数. 栈限制取决于`GameplayEffect`.
 * [GameplayEffectContextHandle](#concepts-ge-context)表明该`GameplayEffectSpec`由谁创建.
 * `Attribute`在`GameplayEffectSpec`创建时由Snapshot捕获.
 * 除了`GameplayEffect`授予的`GameplayTags`, `GameplayEffectSpec`还会授予目标(Target)`DynamicGrantedTags`.
@@ -1434,7 +1434,7 @@ FGameplayEffectSpec* GetOwningSpecForPreExecuteMod() const;
 `CAR`的应用场景:  
 
 * 目标需要有一定数量的`Attribute`.
-* 目标需要有一定数量的`GameplayEffect`堆栈.
+* 目标需要有一定数量的`GameplayEffect`栈.
 
 `CAR`还有很多高阶功能, 像检查`GameplayEffect`实例是否已经位于目标上, 修改当前实例的[持续时间](#concepts-ge-duration)而不是应用一个新实例(对于`CanApplyGameplayEffect()`返回false).
 
@@ -3117,9 +3117,9 @@ if (SpecAssetTags.HasTag(FGameplayTag::RequestGameplayTag(FName("Effect.Damage.C
 **[⬆ 返回目录](#table-of-contents)**
 
 <a name="cae-nonstackingge"></a>
-### 5.7 非堆栈GameplayEffect, 但是只有其最高级(Greatest Magnitude)才能实际影响Target
+### 5.7 非栈式GameplayEffect, 但是只有其最高级(Greatest Magnitude)才能实际影响Target
 
-Paragon中的Slow Effect是非堆栈的. 应用每个实例并且像平常一样跟踪其生命周期, 但是只有最高级(Greatest Magnitude)的Slow Effect才能实际影响`Character`. GAS为这种场景提供了开箱即用的`AggregatorEvaluateMetaData`, 详见[AggregatorEvaluateMetaData()](#concepts-as-onattributeaggregatorcreated)及其实现.  
+Paragon中的Slow Effect是非栈式的. 应用每个实例并且像平常一样跟踪其生命周期, 但是只有最高级(Greatest Magnitude)的Slow Effect才能实际影响`Character`. GAS为这种场景提供了开箱即用的`AggregatorEvaluateMetaData`, 详见[AggregatorEvaluateMetaData()](#concepts-as-onattributeaggregatorcreated)及其实现.  
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -3169,7 +3169,7 @@ UE_ENABLE_OPTIMIZATION
 
 第一页显示了所有`Attribute`的`CurrentValue`: ![First Page of showdebug abilitysystem](Images/showdebugpage1.png)  
 
-第二页显示了所有应用到你的持续(Duration)和无限(Infinite)`GameplayEffect`, 它们的堆栈数, 使用的`GameplayTag`和`Modifier`. ![Second Page of showdebug abilitysystem](Images/showdebugpage2.png)  
+第二页显示了所有应用到你的持续(Duration)和无限(Infinite)`GameplayEffect`, 它们的栈数, 使用的`GameplayTag`和`Modifier`. ![Second Page of showdebug abilitysystem](Images/showdebugpage2.png)  
 
 第三页显示了所有授予到你的`GameplayAbility`, 无论其是否正在运行, 无论其是否被阻止激活, 和当前正在运行的`AbilityTask`的状态.  ![Third Page of showdebug abilitysystem](Images/showdebugpage3.png) 
 
@@ -3306,7 +3306,7 @@ Fortnite大逃杀(Fortnite Battle Royale)世界中有很多可损坏的`AActor`(
 
 ![Listen for Cooldown Change BP Node](Images/cooldownchange.png)  
 
-监听`GE`堆栈修改:  
+监听`GameplayEffect`栈的修改:  
 
 ![Listen for GameplayEffect Stack Change BP Node](Images/gestackchange.png)  
 
