@@ -2154,7 +2154,7 @@ void CancelAllAbilities(UGameplayAbility* Ignore=nullptr);
 virtual void DestroyActiveState();
 ```
 
-**Note:** 我发现如果存在一个`非实例(Non-Instanced)GameplayAbility`时, `CancelAllAbilities`似乎不能正常运行, 它似乎会命中这个`非实例(Non-Instanced)GameplayAbility`并放弃继续处理. `CancelAbility`可以更好地处理`非实例(Non-Instanced)GameplayAbility`, 样例项目就是这样使用的(跳跃是一个非实例(Non-Instanced)GameplayAbility), 因人而异.  
+**Note:** 我发现如果存在一个非实例(Non-Instanced)`GameplayAbility`时, `CancelAllAbilities`似乎不能正常运行, 它似乎会命中这个非实例(Non-Instanced)`GameplayAbility`并放弃继续处理. `CancelAbility`可以更好地处理非实例(Non-Instanced)`GameplayAbility`, 样例项目就是这样使用的(跳跃是一个非实例(Non-Instanced)`GameplayAbility`), 因人而异.  
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -2184,7 +2184,7 @@ UAbilitySystemComponent::GetActivatableGameplayAbilitySpecsByAllMatchingTags(con
 |:-:|:-:|:-:|
 |按Actor实例化(Instanced Per Actor)|每个`ASC`只能有一个在激活之间复用的`GameplayAbility`实例.|这可能是你使用最频繁的实例化策略. 你可以对任一`Ability`使用并在激活之间提供持久化. 设计者可以在激活之间手动重设任意变量.|
 |按操作实例化(Instanced Per Execution)|每有一个`GameplayAbility`激活, 就有一个新的`GameplayAbility`实例创建.|这些`GameplayAbility`的好处是每次激活时变量都会重置, 其性能要比`Instanced Per Actor`差, 因为每次激活时都会生成新的`GameplayAbility`. 样例项目没有使用该方式.|
-|非实例化(Non-Instanced)|`GameplayAbility`操作其`ClassDefaultObject`, 没有实例创建.|它是三种方式中性能最好的, 但是使用它是最受限制的. `非实例化(Non-Instanced)GameplayAbility`不能存储状态, 这意味着没有动态变量和不能绑定到`AbilityTask`委托. 使用它的最佳场景就是需要频繁使用的简单Ability, 像MOBA或RTS游戏中小兵的基础攻击. 样例项目中的跳跃`GameplayAbility`就是`非实例化(Non-Instanced)`的.|
+|非实例(Non-Instanced)|`GameplayAbility`操作其`ClassDefaultObject`, 没有实例创建.|它是三种方式中性能最好的, 但是使用它是最受限制的. 非实例(Non-Instanced)`GameplayAbility`不能存储状态, 这意味着没有动态变量和不能绑定到`AbilityTask`委托. 使用它的最佳场景就是需要频繁使用的简单Ability, 像MOBA或RTS游戏中小兵的基础攻击. 样例项目中的跳跃`GameplayAbility`就是非实例(Non-Instanced)的.|
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -2230,7 +2230,7 @@ UAbilitySystemComponent::GetActivatableGameplayAbilitySpecsByAllMatchingTags(con
 
 当`GameplayAbility`在服务端授予时, 服务端会同步`GameplayAbilitySpec`到所属客户端, 方便其激活.  
 
-激活`GameplayAbilitySpec`会根据它的实例化策略(Instancing Policy)创建一个`GameplayAbility`实例(`Non-Instanced GameplayAbility`除外).  
+激活`GameplayAbilitySpec`会根据它的实例化策略(Instancing Policy)创建一个`GameplayAbility`实例(非实例(Non-Instanced)`GameplayAbility`除外).  
 
 **[⬆ 返回目录](#table-of-contents)**
 
@@ -2945,7 +2945,7 @@ FName GetCoolNameFromTargetData(const FGameplayAbilityTargetDataHandle& Handle, 
 
 |常用`TargetActor`参数|定义|
 |:-:|:-:|
-|Debug|如果为真, 每当非发行版本中的`TargetActor`执行射线检测时, 其会绘制debug射线/Overlap信息. 请记住, `non-Instant TargetActor`会在`Tick()`中执行射线检测, 因此这些debug绘制调用也会在`Tick()`中触发.|
+|Debug|如果为真, 每当非发行版本中的`TargetActor`执行射线检测时, 其会绘制debug射线/Overlap信息. 请记住, 非实例(non-Instant)`TargetActor`会在`Tick()`中执行射线检测, 因此这些debug绘制调用也会在`Tick()`中触发.|
 |Filter|[可选]当射线/Overlap触发时, 用于从Target中过滤(移除)Actor的特殊结构体. 典型的使用案例是过滤玩家的`Pawn`, 其要求Target是特殊类. 查看[Target Data Filters](#concepts-target-data-filters)以获得更多高级使用案例.|
 |Reticle Class|[可选]`TargetActor`生成的`AGameplayAbilityWorldReticle`子类.|
 |Reticle Parameters|[可选]配置你的Reticle. 查看[Reticles](#concepts-targeting-reticles).|
@@ -2987,7 +2987,7 @@ FGameplayTargetDataFilterHandle UGDTargetDataFilterBlueprintLibrary::MakeGDNameF
 <a name="concepts-targeting-reticles"></a>
 #### 4.11.4 Gameplay Ability World Reticles
 
-当使用已确认的`non-Instant` [TargetActor](#concepts-targeting-actors)定位时, [AGameplayAbilityWorldReticles(Reticles)](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/Abilities/AGameplayAbilityWorldReticle/index.html)可以可视化正在定位的目标. `TargetActor`负责所有`Reticle`生命周期的生成和销毁. `Reticle`是AActor, 因此其可以使用任意种类的可视组件作为表现形式. GASShooter中常见的一种实现方式是使用`WidgetComponent`在屏幕空间中显示UMG Widget(永远面对玩家的摄像机). `Reticle`不知道其正在定位的Actor, 但是你可以通过继承在自定义`TargetActor`中实现该功能. `TargetActor`一般在每次`Tick()`中更新`Reticle`的位置为Target的位置.  
+当使用已确认的非实例(non-Instant) [TargetActor](#concepts-targeting-actors)定位时, [AGameplayAbilityWorldReticles(Reticles)](https://docs.unrealengine.com/en-US/API/Plugins/GameplayAbilities/Abilities/AGameplayAbilityWorldReticle/index.html)可以可视化正在定位的目标. `TargetActor`负责所有`Reticle`生命周期的生成和销毁. `Reticle`是AActor, 因此其可以使用任意种类的可视组件作为表现形式. GASShooter中常见的一种实现方式是使用`WidgetComponent`在屏幕空间中显示UMG Widget(永远面对玩家的摄像机). `Reticle`不知道其正在定位的Actor, 但是你可以通过继承在自定义`TargetActor`中实现该功能. `TargetActor`一般在每次`Tick()`中更新`Reticle`的位置为Target的位置.  
 
 GASShooter对火箭筒二技能制导火箭锁定的目标使用了`Reticle`. 敌人身上的红色标识就是`Reticle`, 相似的白色图像是火箭筒的准星.  
 
